@@ -174,31 +174,29 @@ body.win .titlebar { display: none; }
 #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
 #splash .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(204,255,77,.07), transparent 360px);
   opacity: 0; animation: fadein 1.2s .5s ease-out forwards; }
-/* Hop's own entrance: the "h" and "p" slide in from either side, then the lime "o" drops in,
-   bounces twice with squash and stretch while its shadow grows and shrinks, and settles mid-hop. */
-.splash-mark .l { display: inline-block; opacity: 0; }
-.splash-mark .lh { transform: translateX(-.7em); animation: slidein .6s cubic-bezier(.3,1.35,.5,1) .05s forwards; }
-.splash-mark .lp { transform: translateX(.7em); animation: slidein .6s cubic-bezier(.3,1.35,.5,1) .05s forwards; }
-.splash-mark .o > i { opacity: 0; transform: translateY(-1.7em); transform-origin: 50% 92%; animation: hopin 1.05s .3s forwards; }
-.splash-mark .o::after { opacity: 0; transform: scaleX(.2); animation: hopshadow 1.05s .3s forwards; }
-@keyframes slidein { to { opacity: 1; transform: none; } }
-@keyframes hopin {
-  0%   { opacity: 0; transform: translateY(-1.7em) scale(.9, 1.15); animation-timing-function: cubic-bezier(.5,0,1,.6); }
-  8%   { opacity: 1; }
-  34%  { transform: translateY(0) scale(1.28, .7); animation-timing-function: cubic-bezier(0,.5,.5,1); }
-  52%  { transform: translateY(-.6em) scale(.9, 1.12); animation-timing-function: cubic-bezier(.5,0,1,.6); }
-  68%  { transform: translateY(0) scale(1.14, .84); animation-timing-function: cubic-bezier(0,.5,.5,1); }
-  82%  { transform: translateY(-.36em) scale(.97, 1.04); animation-timing-function: ease-in-out; }
-  100% { opacity: 1; transform: translateY(-.28em); }
+/* Hop's own entrance (same as hop.pxlvzn.in): the h and p spring up from the baseline, then the
+   lime o bounds in from the left, hops onto the top of the h, squashes, hops down into its gap
+   (the p flinches), squashes again, stretches and floats up to rest mid-hop over its shadow. */
+.splash-mark .l { display: inline-block; opacity: 0; transform-origin: 50% 100%; animation: hop-spring .5s cubic-bezier(.34,1.56,.64,1) .05s forwards; }
+.splash-mark .lp { animation: hop-spring .5s cubic-bezier(.34,1.56,.64,1) .17s forwards, hop-flinch .35s ease-out 1.3s; }
+.splash-mark .o > i { opacity: 0; transform-origin: 50% 100%; animation: hop-o 1.25s linear .45s forwards; }
+.splash-mark .o::after { opacity: 0; animation: hop-sh-in .3s ease-out 1.3s forwards; }
+@keyframes hop-spring { 0% { opacity: 0; transform: scale(.2); } 30% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes hop-o {
+  0% { opacity: 0; transform: translate(-1.5em, 0); animation-timing-function: cubic-bezier(.2,.6,.4,1); }
+  4% { opacity: 1; }
+  16% { transform: translate(-1.04em, -1.12em); animation-timing-function: cubic-bezier(.6,0,.8,.4); }
+  32% { opacity: 1; transform: translate(-.58em, -.73em); animation-timing-function: ease-out; }
+  37.6% { transform: translate(-.58em, -.73em) scale(1.25, .75); animation-timing-function: ease-in; }
+  41.6% { transform: translate(-.58em, -.73em) scale(.92, 1.1); animation-timing-function: cubic-bezier(.2,.6,.4,1); }
+  54.4% { transform: translate(-.29em, -1.08em); animation-timing-function: cubic-bezier(.6,0,.8,.4); }
+  68% { transform: translate(0, 0); animation-timing-function: ease-out; }
+  73.6% { transform: translate(0, 0) scale(1.38, .62); animation-timing-function: ease-in-out; }
+  80% { transform: translate(0, -.02em) scale(.9, 1.12); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
+  100% { opacity: 1; transform: translate(0, -.28em); }
 }
-@keyframes hopshadow {
-  0%   { opacity: 0; transform: scaleX(.2); }
-  34%  { opacity: 1; transform: scaleX(1.5); }
-  52%  { opacity: .6; transform: scaleX(.7); }
-  68%  { opacity: 1; transform: scaleX(1.25); }
-  82%  { opacity: .9; transform: scaleX(.92); }
-  100% { opacity: 1; transform: none; }
-}
+@keyframes hop-flinch { 0%, 100% { transform: none; } 30% { transform: translateY(.05em) scale(1.03, .95); } }
+@keyframes hop-sh-in { to { opacity: 1; } }
 .splash-status { color: var(--text3); font-weight: 600; font-size: 13px; letter-spacing: .02em; opacity: 0; animation: fadein .4s .9s forwards; }
 
 /* ---------- drop overlay ---------- */

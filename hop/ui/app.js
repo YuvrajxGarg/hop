@@ -549,9 +549,9 @@
     const scan = $('#scan');
     if (!info.bonjour) { scan.classList.add('off'); scan.lastChild.textContent = 'Bonjour off · add by address'; }
     if (info.error) toast(info.error, true);
-    if (!settings.welcomed) setTimeout(showWelcome, 1550);
-    setTimeout(() => { $('#splash').classList.add('out'); $('#app').classList.add('in'); }, 1550);
-    setTimeout(() => $('#splash').remove(), 2200);
+    if (!settings.welcomed) setTimeout(showWelcome, 2000);
+    setTimeout(() => { $('#splash').classList.add('out'); $('#app').classList.add('in'); }, 2000);
+    setTimeout(() => $('#splash').remove(), 2600);
   }
 
   // Development bridge: the same UI in a normal browser, talking to `HOP_UI_DEV` over fetch.
