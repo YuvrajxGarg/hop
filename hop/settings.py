@@ -26,9 +26,12 @@ DEFAULTS = {
     "last_checked": None,
     "notified_version": None,
     "peers": {},                 # device_id -> {"name", "key", "paired"}
+    "id_seed": None,             # Ed25519 seed behind this device's Hop code (never leaves it)
+    "contacts": {},              # Hop code -> {"name", "vk", "added"}: people added by code
+    "relay": True,               # send and receive by Hop code over the internet
 }
 
-PUBLIC = ("device_name", "save_dir", "auto_accept", "open_after", "auto_check", "auto_install", "welcomed")
+PUBLIC = ("device_name", "save_dir", "auto_accept", "open_after", "auto_check", "auto_install", "welcomed", "relay")
 
 
 def app_data_dir():
@@ -113,6 +116,21 @@ class Settings(object):
             peers = dict(self.data.get("peers") or {})
             peers.pop(device_id, None)
             self.data["peers"] = peers
+            self._save()
+
+    # people added by Hop code
+    def add_contact(self, code, name, vk_b64, when):
+        with self.lock:
+            cs = dict(self.data.get("contacts") or {})
+            cs[code] = {"name": name, "vk": vk_b64, "added": when}
+            self.data["contacts"] = cs
+            self._save()
+
+    def forget_contact(self, code):
+        with self.lock:
+            cs = dict(self.data.get("contacts") or {})
+            cs.pop(code, None)
+            self.data["contacts"] = cs
             self._save()
 
     def public(self):

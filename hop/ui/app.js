@@ -25,6 +25,8 @@
     out: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
     in: '<path d="M17 7 7 17"/><path d="M16 17H7V8"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
     wifi: '<path d="M5 12.6a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M2 8.8a15 15 0 0 1 20 0"/><path d="M12 20h.01"/>',
   };
   const icon = (n) => `<svg class="i" viewBox="0 0 24 24">${ICONS[n] || ''}</svg>`;
@@ -37,22 +39,22 @@
     if (el.tagName === 'I') el.outerHTML = svg; else el.insertAdjacentHTML('afterbegin', svg);
   });
 
-  let api = null, settings = {}, upd = null, modal = null, home = '', info = {};
+  let api = null, settings = {}, upd = null, modal = null, home = '', info = {}, relay = null;
   let peers = [], selection = { count: 0 }, chosen = null, pairing = null;
   const transfers = new Map();
   const tilde = (p) => (home && p && p.startsWith(home) ? '~' + p.slice(home.length) : p);
 
   // ---------- devices ----------
-  const devIcon = (p) => p.id === 'phone' ? 'phone' : p.platform === 'mac' ? 'laptop' : 'monitor';
+  const devIcon = (p) => p.id === 'phone' ? 'phone' : p.remote ? 'globe' : p.platform === 'mac' ? 'laptop' : 'monitor';
   function renderDevices() {
     const list = peers.concat([{ id: 'phone', name: 'Phone or tablet', online: true, phone: true }]);
     if (chosen && !list.some((p) => p.id === chosen && p.online)) chosen = null;
     if (!chosen) { const first = list.find((p) => p.online && p.id !== 'phone'); if (first) chosen = first.id; }
-    const sub = (p) => p.phone ? 'Opens in its browser, nothing to install' : !p.online ? 'Not on this network' :
+    const sub = (p) => p.phone ? 'Opens in its browser, nothing to install' : p.remote ? 'Anywhere · ' + p.code : !p.online ? 'Not on this network' :
       (p.paired ? 'Paired' : 'Pair once with a code') + (p.platform ? ' · ' + ({ mac: 'Mac', windows: 'Windows', linux: 'Linux' }[p.platform] || p.platform) : '');
-    $('#devices').innerHTML = (peers.some((p) => p.online) ? '' : `<div class="none">No computers found yet. Open Hop on another computer on this Wi-Fi.</div>`) +
+    $('#devices').innerHTML = (peers.some((p) => p.online) ? '' : `<div class="none">No one here yet. Computers on this Wi-Fi show up by themselves. For anyone else, add their Hop code.</div>`) +
       list.filter((p) => p.online || p.paired).map((p) => `<button class="dev ${p.id === chosen ? 'on' : ''} ${p.online ? '' : 'offline'}" data-id="${esc(p.id)}">
-        <div class="di">${icon(devIcon(p))}${p.paired ? `<span class="lock">${icon('lock')}</span>` : ''}</div>
+        <div class="di">${icon(devIcon(p))}${p.paired && !p.remote ? `<span class="lock">${icon('lock')}</span>` : ''}</div>
         <div class="t"><b>${esc(p.name || 'Unknown')}</b><span>${sub(p)}</span></div></button>`).join('');
     refreshSend();
   }
@@ -108,10 +110,10 @@
     const acts = [];
     if (t.dir === 'in' && t.status === 'asking') acts.push(`<button class="btn-quiet" data-act="accept">Review</button>`);
     if (t.status === 'done' && t.first) acts.push(`<button class="btn-icon" data-act="reveal" title="Show in folder">${icon('reveal')}</button>`);
-    if (t.dir === 'out' && ['failed', 'cancelled'].includes(t.status) && t.kind === 'computer') acts.push(`<button class="btn-icon" data-act="retry" title="Try again">${icon('refresh')}</button>`);
+    if (['failed', 'cancelled'].includes(t.status) && (t.kind === 'remote' || (t.dir === 'out' && t.kind === 'computer'))) acts.push(`<button class="btn-icon" data-act="retry" title="Try again">${icon('refresh')}</button>`);
     if (['preparing', 'asking', 'sending', 'receiving', 'waiting', 'ready'].includes(t.status)) acts.push(`<button class="btn-icon" data-act="cancel" title="Stop">${icon('stop')}</button>`);
     else acts.push(`<button class="btn-icon" data-act="remove" title="Remove from list">${icon('x')}</button>`);
-    return `<div class="ticon ${t.dir}">${icon(t.kind === 'phone' ? 'phone' : t.dir === 'in' ? 'in' : 'out')}</div>
+    return `<div class="ticon ${t.dir}">${icon(t.kind === 'phone' ? 'phone' : t.kind === 'remote' ? 'globe' : t.dir === 'in' ? 'in' : 'out')}</div>
       <div class="meta"><div class="title">${esc(title)}</div>${bar}<div class="sub">${sub}</div></div>
       ${pill(t)}<div class="acts">${acts.join('')}</div>`;
   }
@@ -251,7 +253,7 @@
         <p>${human(t.total)} · saved to ${esc(tilde(settings.save_dir))}</p>
       </div>
       <div class="offer-files">${files}</div>
-      <button class="opt" data-m="always"><div class="t"><b>Always accept from paired devices</b><span>Skip this question next time</span></div>${sw(settings.auto_accept)}</button>
+      <button class="opt" data-m="always"><div class="t"><b>Always accept from paired devices</b><span>${t.kind === 'remote' ? 'And from people you’ve added by Hop code' : 'Skip this question next time'}</span></div>${sw(settings.auto_accept)}</button>
       <div class="foot"><button class="btn-quiet" data-m="decline">Decline</button><button class="btn-primary inline" data-m="accept">${icon('download')}Accept</button></div>`,
       async (m, el) => {
         if (m === 'accept') { api.decide(t.tid, true); closeModal(); }
@@ -277,6 +279,50 @@
       <div class="url">${esc(ph.url.split('#')[0])}</div>
       <div class="foot"><button class="link" data-m="fresh">${icon('refresh')}New link</button><button class="btn-quiet" data-m="close">Done</button></div>`,
       (m) => { if (m === 'close' || m === 'backdrop') closeModal(); else if (m === 'fresh') showPhone(true); }, 'phone');
+  }
+
+  // Add someone by their Hop code (works on any network), or a computer by address.
+  function codeBox() {
+    const r = relay || {};
+    return `<div class="mycode"><div class="t"><span class="k">Your Hop code</span><b>${esc(r.pretty || '…')}</b>
+        <span class="${r.online ? 'ok' : 'faint'}">${r.enabled === false ? 'Turned off in Settings' : r.online ? 'Others can add you with it' : esc(r.error || 'Connecting…')}</span></div>
+      <button class="btn-quiet" data-m="copy">${icon('copy')}Copy</button></div>`;
+  }
+  function addPerson() {
+    showModal('person', `
+      <div class="modal-title"><h2>Add someone</h2><button class="btn-icon" data-m="close">${icon('x')}</button></div>
+      <p class="hint">Type their Hop code. They'll find it in Hop under <b>Add someone</b>. Works across any network, end-to-end encrypted.</p>
+      <input class="text-in code-in" id="code-in" placeholder="7KQ2-9XMD-4TRA" spellcheck="false" autocomplete="off" maxlength="16">
+      <div class="err hidden" id="code-err"></div>
+      ${codeBox()}
+      <div class="foot"><button class="btn-link" data-m="addr">Same Wi-Fi but not showing up? Add by address</button>
+        <span class="grow"></span><button class="btn-quiet" data-m="close">Cancel</button><button class="btn-primary inline" data-m="add">Add</button></div>`,
+      async (m) => {
+        if (m === 'close' || m === 'backdrop') return closeModal();
+        if (m === 'addr') return addAddress();
+        if (m === 'copy') { copyText(relay && relay.pretty); return; }
+        if (m === 'add') {
+          const btn = document.querySelector('.modal [data-m="add"]');
+          btn.disabled = true;
+          const r = await api.add_code($('#code-in').value.trim());
+          btn.disabled = false;
+          if (r.ok) { peers = await api.peers(); chosen = r.peer.id; renderDevices(); closeModal(); toast(`Added ${r.peer.name}`); }
+          else { $('#code-err').textContent = r.error; $('#code-err').classList.remove('hidden'); }
+        }
+      }, 'narrow');
+    const inp = $('#code-in');
+    inp.focus();
+    inp.oninput = () => {
+      const raw = inp.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 12);
+      inp.value = raw.match(/.{1,4}/g) ? raw.match(/.{1,4}/g).join('-') : '';
+    };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') document.querySelector('[data-m="add"]').click(); };
+  }
+  function copyText(t) {
+    if (!t) return;
+    const done = () => toast('Copied your Hop code');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => api.copy(t).then(done));
+    else api.copy(t).then(done);
   }
 
   function addAddress() {
@@ -330,19 +376,26 @@
   }
   async function openSettings(focusName) {
     peers = await api.peers();
-    const paired = peers.filter((p) => p.paired);
+    const paired = peers.filter((p) => p.paired && !p.remote);
+    const people = peers.filter((p) => p.remote);
     showModal('settings', `
       <div class="modal-title"><h2>Settings</h2><button class="btn-icon" data-m="close">${icon('x')}</button></div>
       <div class="label">This computer</div>
       <div class="group">
         <div><span class="k">Name other devices see</span></div>
         <div style="padding-top:0"><input class="text-in" id="name-in" value="${esc(settings.device_name)}" maxlength="40" spellcheck="false"></div>
+        <div><span class="k">Hop code</span><span class="v url">${esc(relay ? relay.pretty : '')}</span><button class="btn-quiet" data-m="copy">${icon('copy')}Copy</button></div>
         <div><span class="k">Address</span><span class="v url" style="font-size:12px">${esc(info.ip)}:${esc(info.port)}</span></div>
+      </div>
+      <div class="label">Sending by Hop code</div>
+      <div class="group">
+        ${opt('relay', 'Send and receive by Hop code', 'For people on other networks. Files are end-to-end encrypted, held on hop.pxlvzn.in for at most 7 days, and deleted once received.')}
+        ${people.length ? people.map((p) => `<div><span class="k">${esc(p.name)} <span class="faint">${esc(p.code)}</span></span><button class="btn-quiet" data-m="forget" data-id="${esc(p.id)}">Remove</button></div>`).join('') : '<div class="empty-row">No one added yet. Use Add someone by Hop code.</div>'}
       </div>
       <div class="label">Receiving</div>
       <div class="group">
         <button class="opt" data-m="savedir"><div class="t"><b>Save files to</b><span>${esc(tilde(settings.save_dir))}</span></div><span class="btn-quiet">Change</span></button>
-        ${opt('auto_accept', 'Accept from paired devices without asking', 'Phones that scanned your code are always accepted')}
+        ${opt('auto_accept', 'Accept from paired devices without asking', 'And from people you’ve added by Hop code. Phones that scanned your code are always accepted')}
         ${opt('open_after', 'Show files when they arrive', 'Opens the folder in Finder or Explorer')}
       </div>
       <div class="label">Paired devices</div>
@@ -362,6 +415,7 @@
           el.querySelector('.switch').classList.toggle('on', !!settings[k]);
         } else if (m === 'savedir') { settings = await api.choose_save_dir(); el.querySelector('.t span').textContent = tilde(settings.save_dir); renderFooter(); }
         else if (m === 'forget') { peers = await api.forget(el.dataset.id); renderDevices(); el.parentElement.remove(); }
+        else if (m === 'copy') copyText(relay && relay.pretty);
         else if (m === 'check') { upd = await api.check_updates(); renderUpdateRow(); renderPill(); }
         else if (m === 'see-update') openUpdate();
         else if (m === 'page') api.open_url(upd ? upd.page : '');
@@ -476,6 +530,8 @@
         if (t) transfers.set(p.tid, Object.assign(t, { tid: p.tid }));
         if (el) { el.id = 't-' + p.tid; el.dataset.tid = p.tid; }
       }
+      else if (event === 'relay') { relay = p; if (modal === 'person') { const b = document.querySelector('.mycode'); if (b) b.outerHTML = codeBox(); } }
+      else if (event === 'toast') toast(p.text, p.error);
       else if (event === 'pair_code') showCode(p);
       else if (event === 'pair_end') { if (modal === 'code:' + p.pid) closeModal(); }
       else if (event === 'paired') toast(`Paired with ${p.name}`);
@@ -512,7 +568,7 @@
   $('#dropzone').onclick = () => api.pick_files();
   $('#add-folder').onclick = () => api.pick_folder();
   $('#sel-clear').onclick = async () => { selection = await api.clear_selection(); renderSelection(); };
-  $('#add-addr').onclick = addAddress;
+  $('#add-addr').onclick = addPerson;
   $('#open-phone').onclick = () => showPhone();
   $('#open-inbox').onclick = () => api.open_save_dir();
   $('#save-row').onclick = () => api.open_save_dir();
@@ -539,6 +595,7 @@
     home = info.home || '';
     upd = info.update;
     peers = info.peers || [];
+    relay = info.relay || null;
     selection = info.selection || { count: 0 };
     (info.transfers || []).forEach(upsert);
     renderFooter();

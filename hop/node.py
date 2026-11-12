@@ -236,8 +236,10 @@ class Outgoing(object):
 # ---- the node --------------------------------------------------------------
 
 class Node(object):
-    def __init__(self, settings, emit=None, port=None, discover=True):
+    def __init__(self, settings, emit=None, port=None, discover=True, relay=False):
         self.settings = settings
+        self.relay = relay
+        self.remote = None
         self.emit_cb = emit or (lambda ev, payload: None)
         self.id = settings.get("device_id")
         self.port = port
@@ -280,6 +282,9 @@ class Node(object):
         if self.discover:
             self.discovery = Discovery(self.id, self.name, self.port, __version__, PLATFORM, lambda: self.emit("peers", self.peers()))
             self.discovery.start([self.ip])
+        if self.relay:
+            from .remote import Remote
+            self.remote = Remote(self).start()
         return self
 
     def stop(self):
@@ -288,6 +293,8 @@ class Node(object):
         for i in list(self.incoming.values()):
             if i.accepted and i.status != "done":
                 self._save_state(i, force=True)
+        if self.remote:
+            self.remote.stop()
         if self.discovery:
             self.discovery.stop()
         if self.httpd:
@@ -322,6 +329,11 @@ class Node(object):
             out[did]["paired"] = True
         for p in out.values():
             p.setdefault("paired", False)
+        if self.remote:
+            from .remote import pretty
+            for code, c in self.remote.contacts().items():
+                out["code:" + code] = {"id": "code:" + code, "name": c.get("name"), "online": True, "paired": True,
+                                       "platform": "", "remote": True, "code": pretty(code)}
         return sorted(out.values(), key=lambda p: (not p["online"], (p.get("name") or "").lower()))
 
     def find_peer(self, ref):
@@ -581,7 +593,7 @@ class Node(object):
             inc.status = "receiving"
         return {"state": "accepted", "need": inc.need()}
 
-    def _new_incoming(self, peer_id, tid, obj):
+    def _new_incoming(self, peer_id, tid, obj, kind=None, pname=None, trusted=True):
         files = obj.get("files") or []
         if not isinstance(files, list) or not files or len(files) > MAX_FILES:
             raise HopError("bad file list")
@@ -596,7 +608,9 @@ class Node(object):
                 raise HopError("bad hash")
             clean.append({"name": safe_relpath(f.get("name", "file")), "size": size, "sha256": sha,
                           "chunks": chunks_for(size), "have": set(), "status": "waiting", "final": None})
-        if peer_id.startswith("web:"):
+        if kind:
+            pass
+        elif peer_id.startswith("web:"):
             kind, pname = "phone", str(obj.get("from_name") or "Phone")[:40]
         else:
             kind, pname = "computer", self._peer_name(peer_id)
@@ -612,11 +626,23 @@ class Node(object):
                         f["have"] = from_ranges(s.get("have"), f["chunks"])
         except (OSError, ValueError, TypeError):
             pass
-        if kind == "phone" or self.settings.get("auto_accept") or any(f["have"] for f in clean):
+        if kind == "phone" or (trusted and self.settings.get("auto_accept")) or any(f["have"] for f in clean):
             inc.accepted = True
             inc.status = "receiving"
             inc.decided.set()
         return inc
+
+    def _add_incoming(self, inc):
+        """A transfer that arrived by Hop code (the relay), not over the LAN."""
+        with self.lock:
+            self.incoming[inc.tid] = inc
+            self._track(inc)
+        if inc.accepted:
+            self._prepare(inc)
+            self.remote.decided(inc)
+        else:
+            self.emit("offer", self.public(inc))
+        self._emit_t(inc, True)
 
     def decide(self, tid, accept):
         inc = self.incoming.get(tid)
@@ -630,6 +656,8 @@ class Node(object):
             inc.status = "declined"
         inc.decided.set()
         self._emit_t(inc, True)
+        if inc.kind == "remote" and self.remote:
+            self.remote.decided(inc)
 
     def _prepare(self, inc):
         os.makedirs(inc.part_dir, exist_ok=True)
@@ -673,6 +701,10 @@ class Node(object):
         f = inc.files[fi]
         if not 0 <= ci < f["chunks"]:
             raise HopError("bad chunk")
+        self._store_chunk(inc, fi, ci, data)
+
+    def _store_chunk(self, inc, fi, ci, data):
+        f = inc.files[fi]
         want = min(CHUNK, f["size"] - ci * CHUNK)
         if len(data) != want:
             raise HopError("chunk is the wrong size")
@@ -760,6 +792,8 @@ class Node(object):
             self._emit_t(out, True)
             if out.kind == "computer":
                 threading.Thread(target=self._try_cancel_remote, args=(out.peer_id, tid), daemon=True).start()
+            elif out.kind == "remote" and self.remote:
+                threading.Thread(target=self.remote.cancel_sent, args=(out,), daemon=True).start()
         inc = self.incoming.get(tid)
         if inc and inc.status not in ("done",):
             if not inc.decided.is_set():
@@ -795,6 +829,8 @@ class Node(object):
             raise HopError("Nothing to send")
         if peer_id == "phone":
             return self.share_to_phone(files)
+        if peer_id.startswith("code:"):
+            return self.send_by_code(peer_id, files, wait)
         if not self.key_for(peer_id):
             raise HopError("unpaired")
         tmp = crypto.random_id(12)
@@ -811,8 +847,56 @@ class Node(object):
             th.join()
         return out
 
+    def send_by_code(self, peer_id, files, wait=False):
+        if not self.remote:
+            raise HopError("Sending by Hop code is turned off")
+        c = self.remote.contacts().get(peer_id.split(":", 1)[1])
+        if not c:
+            raise HopError("Add this person by their Hop code first")
+        tmp = crypto.random_id(12)
+        out = Outgoing(tmp, peer_id, c.get("name") or "Someone", "remote",
+                       [{"path": p, "name": n, "size": os.path.getsize(p), "sha256": None, "chunks": chunks_for(os.path.getsize(p))}
+                        for p, n in files])
+        with self.lock:
+            self.outgoing[tmp] = out
+            self._track(out)
+        self._emit_t(out, True)
+        th = threading.Thread(target=self._run_remote, args=(out,), daemon=True)
+        th.start()
+        if wait:
+            th.join()
+        return out
+
+    def _run_remote(self, out):
+        from .remote import RelayError
+        try:
+            self.remote.send(out)
+        except (RelayError, HopError) as e:
+            if out.status != "cancelled":
+                out.status = "failed"
+                out.error = str(e)
+        except Exception as e:  # pragma: no cover
+            out.status = "failed"
+            out.error = "%s: %s" % (type(e).__name__, e)
+        finally:
+            if out.cancelled.is_set() and out.status != "done":
+                out.status = "cancelled"
+            self._emit_t(out, True)
+
     def retry(self, tid):
+        inc = self.incoming.get(tid)
+        if inc and inc.kind == "remote" and inc.accepted and inc.status in ("failed", "cancelled") and self.remote:
+            inc.status = "receiving"
+            threading.Thread(target=self.remote.download, args=(inc,), daemon=True).start()
+            return
         out = self.outgoing.get(tid)
+        if out and out.status in ("failed", "cancelled") and out.kind == "remote":
+            out.cancelled = threading.Event()
+            out.status = "preparing"
+            out.error = None
+            threading.Thread(target=self._run_remote, args=(out,), daemon=True).start()
+            self._emit_t(out, True)
+            return
         if out and out.status in ("failed", "cancelled") and out.kind == "computer":
             out.cancelled = threading.Event()
             out.status = "preparing"

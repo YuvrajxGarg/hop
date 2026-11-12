@@ -45,6 +45,10 @@ Hop checks this repository for new releases and updates itself.
   <img src="docs/screenshot-receive.png" width="880" alt="The receiving computer asking whether to accept six files">
 </p>
 
+### Anyone, anywhere: Hop codes
+
+Every Hop has a code like `7KQ2-9XMD-4TRA`. Click **Add someone by Hop code**, type a friend's code, and send to them from any network: office to home, city to city. Files are sealed end to end on your computer, wait for them on hop.pxlvzn.in for up to 7 days, and are deleted as soon as they accept (or decline). Up to 2 GB per transfer. On the same Wi-Fi, Hop still goes direct.
+
 ### Phones
 
 Click **Phone**, scan the code with the phone's camera, and Hop opens in the phone's browser. Send photos and videos to the computer, or drop files onto *Phone or tablet* in Hop and save them on the phone. iPhone, Android, iPad, anything with a browser.
@@ -64,6 +68,7 @@ Click **Phone**, scan the code with the phone's camera, and Hop opens in the pho
 | **Integrity** | Each file's SHA-256 is checked on arrival before it's moved into place. A mismatch is re-sent automatically. |
 | **Resume** | The transfer id comes from the files' hashes, so if the Wi-Fi drops, a laptop sleeps or either app quits, sending the same files again picks up where it stopped. |
 | **Speed** | Four chunks in flight at once over keep-alive connections. Usually limited by your Wi-Fi, not Hop. |
+| **Hop codes** | A code is 60 bits of SHA-256 of the device's Ed25519 key, so it can't be claimed by anyone else; Hop checks the key it looks up against the code. Each transfer gets a random key; the file list and that key are sealed to the recipient with NaCl box, and 8 MiB pieces with secretbox. The relay sees codes, sizes and ciphertext, nothing else. Recipients get a push (ntfy.sh, on a topic derived from their code) instead of polling. |
 | **Phones** | The QR code carries a one-time key in the URL fragment (after `#`), which browsers never send over the network. The page encrypts and decrypts in the browser with [tweetnacl](https://tweetnacl.js.org), the same format as the desktop app. |
 
 ## Command line
@@ -74,6 +79,8 @@ hop send ~/Shoots/day2 --to "Studio PC"      # by name, or --to 192.168.1.20
 hop receive -o ~/Incoming                    # wait for files; prints pairing codes
 hop receive --yes                            # accept from paired devices without asking
 hop phone ~/Desktop/cut.mp4                  # QR code in the terminal, offers the file to a phone
+hop send ~/Desktop/cut.mp4 --to 7KQ2-9XMD-4TRA   # to someone's Hop code, on any network
+hop code                                     # print this computer's Hop code
 hop devices                                  # list Hop devices on this network
 hop forget "Studio PC"                       # unpair
 ```
@@ -82,7 +89,7 @@ On macOS the binary lives at `Hop.app/Contents/MacOS/Hop`. From source, run `pyt
 
 ## Limits
 
-- **Same network.** Both devices need to be on the same Wi-Fi or LAN. Hop never relays through the internet. Guest networks with "client isolation" block device-to-device traffic.
+- **Different networks go through the relay.** On the same Wi-Fi, Hop sends directly. Sending by Hop code goes through hop.pxlvzn.in (end-to-end encrypted), up to 2 GB per transfer. Guest networks with "client isolation" block direct device-to-device traffic, so use a Hop code there.
 - **Phone page over plain HTTP.** The files are end-to-end encrypted, but the page itself comes from your computer over unencrypted HTTP, because browsers won't trust a certificate for a local IP address. Someone who controls your Wi-Fi could in theory tamper with that page. Computer-to-computer transfers don't have this limit.
 - **Phone downloads use memory.** A phone assembles a received file in memory before saving it, so very large files (several GB) are better sent computer to computer.
 
@@ -108,6 +115,7 @@ python Hop.py
 hop/node.py        the engine: HTTP server, pairing, chunked transfers, resume, phone endpoints
 hop/crypto.py      SPAKE2 pairing and sealed messages
 hop/discovery.py   Bonjour / mDNS
+hop/remote.py      Hop codes: identity, relay client, doorbell
 hop/cli.py         the command line
 hop/webapp.py      the window: HTML/CSS UI in a native WebKit / WebView2 view (pywebview)
 hop/updater.py     GitHub Releases updater (check → download → verify → swap)
