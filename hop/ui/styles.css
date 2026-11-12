@@ -33,14 +33,12 @@ ul { list-style: none; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 svg.i { width: 14px; height: 14px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
-/* ---------- the mark: "hop" with a lime arc hopping over it ---------- */
+/* ---------- the mark: "hop" with the lime "o" caught mid-hop above its shadow ---------- */
 .mark { position: relative; display: inline-block; font: 900 var(--size, 40px)/1 var(--font-display); letter-spacing: -.055em;
   color: var(--text); padding-right: .055em; white-space: nowrap; }
-.mark .arc { position: absolute; left: .06em; right: .16em; top: -.34em; height: .5em; border: .1em solid var(--accent); border-bottom: 0;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-.mark .arc::after { content: ""; position: absolute; right: -.16em; bottom: -.12em; width: .22em; height: .22em; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 0 .05em var(--knock, var(--bg)); }
-
+.mark .o { display: inline-block; position: relative; font: inherit; color: var(--accent); }
+.mark .o > i { display: inline-block; font-style: normal; transform: translateY(-.28em); }
+.mark .o::after { content: ""; position: absolute; left: .14em; right: .14em; top: .75em; height: .07em; border-radius: 1em; background: rgba(204,255,77,.38); }
 .logomark { width: 40px; height: 40px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(#2b2b2d, #121213); border: 1px solid var(--stroke-strong); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
 .logomark .mark { --knock: #1d1d1f; margin-top: -.12em; }
@@ -176,18 +174,31 @@ body.win .titlebar { display: none; }
 #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
 #splash .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(204,255,77,.07), transparent 360px);
   opacity: 0; animation: fadein 1.2s .5s ease-out forwards; }
-/* Hop's own entrance: the letters spring up from the baseline one after another, then a lime
-   ball hops from the "h" to the "p", tracing the arc behind it, and lands with a squash (app.js). */
-.splash-mark .l { display: inline-block; opacity: 0; transform: scale(.2, .2) translateY(.3em); transform-origin: 50% 85%;
-  animation: spring .55s cubic-bezier(.34,1.7,.5,1) forwards; }
-.splash-mark .l:nth-child(1) { animation-delay: .05s; }
-.splash-mark .l:nth-child(2) { animation-delay: .13s; }
-.splash-mark .l:nth-child(3) { animation-delay: .21s; }
-.splash-mark .arc { clip-path: inset(0 100% 0 0); }
-.splash-mark .arc::after { opacity: 0; }
-.splash-mark .ball { position: absolute; left: 0; top: 0; width: .22em; height: .22em; margin: -.11em 0 0 -.11em; border-radius: 50%;
-  background: var(--accent); opacity: 0; box-shadow: 0 0 .4em rgba(204,255,77,.55); }
-@keyframes spring { 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+/* Hop's own entrance: the "h" and "p" slide in from either side, then the lime "o" drops in,
+   bounces twice with squash and stretch while its shadow grows and shrinks, and settles mid-hop. */
+.splash-mark .l { display: inline-block; opacity: 0; }
+.splash-mark .lh { transform: translateX(-.7em); animation: slidein .6s cubic-bezier(.3,1.35,.5,1) .05s forwards; }
+.splash-mark .lp { transform: translateX(.7em); animation: slidein .6s cubic-bezier(.3,1.35,.5,1) .05s forwards; }
+.splash-mark .o > i { opacity: 0; transform: translateY(-1.7em); transform-origin: 50% 92%; animation: hopin 1.05s .3s forwards; }
+.splash-mark .o::after { opacity: 0; transform: scaleX(.2); animation: hopshadow 1.05s .3s forwards; }
+@keyframes slidein { to { opacity: 1; transform: none; } }
+@keyframes hopin {
+  0%   { opacity: 0; transform: translateY(-1.7em) scale(.9, 1.15); animation-timing-function: cubic-bezier(.5,0,1,.6); }
+  8%   { opacity: 1; }
+  34%  { transform: translateY(0) scale(1.28, .7); animation-timing-function: cubic-bezier(0,.5,.5,1); }
+  52%  { transform: translateY(-.6em) scale(.9, 1.12); animation-timing-function: cubic-bezier(.5,0,1,.6); }
+  68%  { transform: translateY(0) scale(1.14, .84); animation-timing-function: cubic-bezier(0,.5,.5,1); }
+  82%  { transform: translateY(-.36em) scale(.97, 1.04); animation-timing-function: ease-in-out; }
+  100% { opacity: 1; transform: translateY(-.28em); }
+}
+@keyframes hopshadow {
+  0%   { opacity: 0; transform: scaleX(.2); }
+  34%  { opacity: 1; transform: scaleX(1.5); }
+  52%  { opacity: .6; transform: scaleX(.7); }
+  68%  { opacity: 1; transform: scaleX(1.25); }
+  82%  { opacity: .9; transform: scaleX(.92); }
+  100% { opacity: 1; transform: none; }
+}
 .splash-status { color: var(--text3); font-weight: 600; font-size: 13px; letter-spacing: .02em; opacity: 0; animation: fadein .4s .9s forwards; }
 
 /* ---------- drop overlay ---------- */

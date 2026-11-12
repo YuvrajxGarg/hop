@@ -9,10 +9,9 @@ body { padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area
 svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 header { display: flex; align-items: center; justify-content: space-between; padding: 14px 2px 22px; }
 .mark { position: relative; display: inline-block; font: 900 30px/1 var(--display); letter-spacing: -.055em; padding-right: .06em; }
-.mark .arc { position: absolute; left: .06em; right: .16em; top: -.34em; height: .5em; border: .1em solid var(--accent); border-bottom: 0;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-.mark .arc::after { content: ""; position: absolute; right: -.16em; bottom: -.12em; width: .22em; height: .22em; border-radius: 50%; background: var(--accent);
-  box-shadow: 0 0 0 .05em var(--bg); }
+.mark .o { display: inline-block; position: relative; font: inherit; color: var(--accent); }
+.mark .o > i { display: inline-block; font-style: normal; transform: translateY(-.28em); }
+.mark .o::after { content: ""; position: absolute; left: .14em; right: .14em; top: .75em; height: .07em; border-radius: 1em; background: rgba(204,255,77,.38); }
 .conn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--stroke);
   color: var(--text2); font-size: 13px; font-weight: 500; max-width: 62%; }
 .conn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
