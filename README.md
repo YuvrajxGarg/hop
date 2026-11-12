@@ -125,7 +125,7 @@ Hop.spec           PyInstaller recipe for both platforms
    git tag v1.0.1 && git push origin v1.0.1
    ```
 
-3. The **Release** workflow builds, tests and smoke-tests both apps, then attaches `Hop-mac.zip` and `Hop-windows.zip` (each with a `.sha256`) to the release. Installed copies pick it up on their next update check.
+3. The **Release** workflow builds, tests and smoke-tests both apps, then attaches `Hop-mac.zip` and `Hop-windows.zip` (each with a `.sha256`) to a draft release, and publishes it only once both are there. Installed copies pick it up on their next update check.
 
 ## License
 

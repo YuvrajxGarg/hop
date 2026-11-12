@@ -25,12 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create the release if it doesn't exist
+      # The release stays a draft until both apps are attached, so the updater never
+      # sees a published release that's missing a platform's zip.
+      - name: Create the draft release if it doesn't exist
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Hop ${TAG#v}" --generate-notes --verify-tag
+            gh release create "$TAG" --title "Hop ${TAG#v}" --generate-notes --verify-tag --draft
 
   build:
     needs: release
@@ -77,3 +79,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" dist/Hop-*.zip dist/Hop-*.zip.sha256 --clobber
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish once both apps are attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          assets=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          echo "$assets"
+          for a in Hop-mac.zip Hop-mac.zip.sha256 Hop-windows.zip Hop-windows.zip.sha256; do
+            echo "$assets" | grep -qx "$a" || { echo "missing $a, leaving the release as a draft"; exit 1; }
+          done
+          gh release edit "$TAG" --draft=false --latest
