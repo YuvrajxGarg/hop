@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Renders the Hop icon: "hop" in a heavy grotesk with the lime "o" caught mid-hop above its shadow.
+<!-- Renders the Hop icon: "hop" in a heavy grotesk with a lime file hopping across it on a dashed path.
      Same tile, gradient and type as the Dwn and Tag icons so the apps read as a family.
        node assets/make_icon.js && python assets/make_icon.py -->
 <html><head><style>
@@ -7,9 +7,11 @@
   .tile { position: absolute; left: 100px; top: 86px; width: 824px; height: 824px; border-radius: 185px;
     background: linear-gradient(#2b2b2b, #0e0e0e); box-shadow: 0 0 0 4px rgba(255,255,255,.08) inset, 0 18px 40px rgba(0,0,0,.35);
     display: flex; align-items: center; justify-content: center; }
-  .mark { position: relative; display: inline-block; font: 900 330px/1 "Inter Display", "Inter", sans-serif; letter-spacing: -.055em;
-    color: #f5f5f5; padding-right: .055em; margin-top: 40px; }
-  .o { display: inline-block; position: relative; color: #ccff4d; }
-  .o > i { display: inline-block; font-style: normal; transform: translateY(-.28em); }
-  .o::after { content: ""; position: absolute; left: .14em; right: .14em; top: .75em; height: .07em; border-radius: 1em; background: rgba(204,255,77,.38); }
-</style></head><body><div class="tile"><span class="mark">h<b class="o"><i>o</i></b>p</span></div></body></html>
+  .mark { position: relative; display: inline-block; font: 900 300px/1 "Inter Display", "Inter", sans-serif; letter-spacing: -.055em;
+    color: #f5f5f5; padding-right: .055em; margin-top: 150px; }
+  .path { position: absolute; left: .12em; right: .2em; top: -.42em; height: .55em; border: max(1px, .045em) dashed rgba(204,255,77,.55);
+  border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+  .file { position: absolute; left: 50%; top: -.62em; width: .32em; height: .4em; margin-left: -.16em; background: #ccff4d; border-radius: .05em;
+  clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%); transform: rotate(12deg); }
+  .file::after { content: ""; position: absolute; right: 0; top: 0; width: 32%; height: 26%; background: #7d9c2f; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+</style></head><body><div class="tile"><span class="mark">hop<i class="path"></i><i class="file"></i></span></div></body></html>

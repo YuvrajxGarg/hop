@@ -401,7 +401,7 @@
       ph === 'available' || ph === 'failed' ? `<button class="btn-primary inline" data-m="${upd.can_install ? 'download' : 'page'}">${icon('download')}${upd.can_install ? 'Download update' : 'Open download page'}</button>` : '';
     showModal('update', `
       <div class="update-hero">
-        <div class="logomark lg"><span class="mark" style="--size:30px;--knock:#1d1d1f">h<b class="o"><i>o</i></b>p</span></div>
+        <div class="logomark lg"><span class="mark" style="--size:30px;--knock:#1d1d1f">hop<i class="path"></i><i class="file"></i></span></div>
         <div><h2>${upd.latest ? 'Hop ' + esc(upd.latest) : 'Updates'}</h2><p class="${ph === 'failed' ? 'err' : ''}">${sub}</p></div>
       </div>
       ${ph === 'downloading' ? `<div class="progress"><div style="width:${pct}%"></div></div>` : ''}
@@ -420,7 +420,7 @@
     const w = $('#welcome');
     let page = 0;
     const pages = [
-      () => `<div class="logomark lg" style="width:96px;height:96px;border-radius:26px"><span class="mark" style="--size:38px;--knock:#1d1d1f">h<b class="o"><i>o</i></b>p</span></div>
+      () => `<div class="logomark lg" style="width:96px;height:96px;border-radius:26px"><span class="mark" style="--size:38px;--knock:#1d1d1f">hop<i class="path"></i><i class="file"></i></span></div>
         <h1>Welcome to Hop</h1>
         <p class="lead">Send files between your Mac, your PC and your phone over Wi-Fi.<br>Like AirDrop, for everything you own.</p>
         <div class="facts">
@@ -528,6 +528,35 @@
   document.addEventListener('dragover', (e) => e.preventDefault());
   document.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; showDrop(false); } });
   document.addEventListener('drop', (e) => { e.preventDefault(); depth = 0; showDrop(false); });
+
+  // ---------- splash: a file hops across ----------
+  function playSplash() {
+    const mark = document.querySelector('.splash-mark');
+    const path = mark && mark.querySelector('.path');
+    const file = mark && mark.querySelector('.file');
+    if (!path || !file || !file.animate) return;
+    const em = parseFloat(getComputedStyle(mark).fontSize);
+    const b = Math.max(1, 0.045 * em), w = path.offsetWidth, h = path.offsetHeight;
+    const rx = (w - b) / 2, ry = h - b / 2;
+    const ease = 'cubic-bezier(.3,.7,.4,1)', at = 520, T = 760;
+    // Offsets from the file's resting place (the top of the arc), following the arc from the h.
+    const frames = [{ transform: `translate(${-rx}px, ${ry + 0.25 * em}px) rotate(-40deg) scale(.3)`, opacity: 0, offset: 0 }];
+    const N = 16;
+    for (let i = 0; i <= N; i++) {
+      const a = Math.PI - (Math.PI / 2) * i / N;
+      frames.push({ transform: `translate(${rx * Math.cos(a)}px, ${ry - ry * Math.sin(a)}px) rotate(${-40 + 52 * i / N}deg) scale(${0.6 + 0.4 * i / N})`,
+        opacity: 1, offset: 0.12 + 0.78 * i / N });
+    }
+    frames.push({ transform: 'rotate(12deg) scale(1)', opacity: 1, offset: 1 });
+    file.animate(frames, { duration: T, delay: at, easing: ease, fill: 'forwards' });
+    path.animate([{ opacity: 1, clipPath: 'inset(-20% 100% -20% -20%)' }, { opacity: 1, clipPath: 'inset(-20% 50% -20% -20%)' }],
+      { duration: T * 0.9, delay: at + T * 0.1, easing: ease, fill: 'forwards' });
+    path.animate([{ opacity: 1, clipPath: 'inset(-20% 50% -20% -20%)' }, { opacity: 1, clipPath: 'inset(-20% -20% -20% -20%)' }],
+      { duration: 380, delay: at + T, easing: 'ease-out', fill: 'forwards' });
+    file.animate([{ transform: 'rotate(12deg) translateY(0)' }, { transform: 'rotate(12deg) translateY(-.06em) scale(1.06)' }, { transform: 'rotate(12deg) translateY(0)' }],
+      { duration: 360, delay: at + T, easing: 'ease-out' });
+  }
+  playSplash();
 
   // ---------- start ----------
   async function start(a) {

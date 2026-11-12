@@ -9,9 +9,11 @@ body { padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area
 svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 header { display: flex; align-items: center; justify-content: space-between; padding: 14px 2px 22px; }
 .mark { position: relative; display: inline-block; font: 900 30px/1 var(--display); letter-spacing: -.055em; padding-right: .06em; }
-.mark .o { display: inline-block; position: relative; font: inherit; color: var(--accent); }
-.mark .o > i { display: inline-block; font-style: normal; transform: translateY(-.28em); }
-.mark .o::after { content: ""; position: absolute; left: .14em; right: .14em; top: .75em; height: .07em; border-radius: 1em; background: rgba(204,255,77,.38); }
+.mark .path { position: absolute; left: .12em; right: .2em; top: -.42em; height: .55em; border: max(1px, .045em) dashed rgba(204,255,77,.55);
+  border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.mark .file { position: absolute; left: 50%; top: -.62em; width: .32em; height: .4em; margin-left: -.16em; background: var(--accent); border-radius: .05em;
+  clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%); transform: rotate(12deg); }
+.mark .file::after { content: ""; position: absolute; right: 0; top: 0; width: 32%; height: 26%; background: #7d9c2f; clip-path: polygon(0 0, 100% 100%, 0 100%); }
 .conn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--stroke);
   color: var(--text2); font-size: 13px; font-weight: 500; max-width: 62%; }
 .conn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
