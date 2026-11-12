@@ -1,0 +1,79 @@
+# Builds Hop for macOS and Windows when a version tag (v1.2.3) is
+# pushed, and attaches the apps to that GitHub release. Installed copies check
+# the latest release for updates:
+#   macOS   -> Hop-mac.zip      + .sha256
+#   Windows -> Hop-windows.zip  + .sha256
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)build, e.g. v1.2.0
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the release if it doesn't exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Hop ${TAG#v}" --generate-notes --verify-tag
+
+  build:
+    needs: release
+    strategy:
+      matrix:
+        os: [macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set version from the tag
+        run: echo "${TAG#v}" > VERSION
+      - run: pip install pyinstaller certifi -r requirements.txt
+      - run: python -m unittest discover tests
+      - run: pyinstaller --noconfirm --log-level WARN Hop.spec
+      - name: Smoke-test the built app
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then python tests/smoke_app.py dist/Hop.app/Contents/MacOS/Hop
+          else python tests/smoke_app.py dist/Hop/Hop.exe; fi
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd dist
+          ditto -c -k --keepParent Hop.app Hop-mac.zip
+          shasum -a 256 Hop-mac.zip > Hop-mac.zip.sha256
+          cat Hop-mac.zip.sha256
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd dist
+          Compress-Archive -Path Hop -DestinationPath Hop-windows.zip
+          $h = (Get-FileHash Hop-windows.zip -Algorithm SHA256).Hash.ToLower()
+          "$h  Hop-windows.zip" | Out-File -Encoding ascii -NoNewline Hop-windows.zip.sha256
+          Get-Content Hop-windows.zip.sha256
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" dist/Hop-*.zip dist/Hop-*.zip.sha256 --clobber

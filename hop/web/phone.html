@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0c">
+  <meta name="color-scheme" content="dark">
+  <title>Hop</title>
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="stylesheet" href="phone.css">
+</head>
+<body>
+  <header>
+    <span class="mark">hop<i class="arc"></i></span>
+    <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
+  </header>
+
+  <main id="main" class="hidden">
+    <label class="send" id="send-label">
+      <input type="file" id="picker" multiple>
+      <span class="send-icon"><svg viewBox="0 0 24 24"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+      <b id="send-title">Send to computer</b>
+      <span>Photos, videos, any file</span>
+    </label>
+
+    <section id="inbox-sec" class="hidden">
+      <h2>From <span id="pc-name">your computer</span></h2>
+      <div id="inbox" class="list"></div>
+    </section>
+
+    <section id="sent-sec" class="hidden">
+      <h2>Sent</h2>
+      <div id="sent" class="list"></div>
+    </section>
+
+    <p class="note"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      End-to-end encrypted over your Wi-Fi. Nothing is uploaded to the internet.</p>
+  </main>
+
+  <div id="nokey" class="hidden center">
+    <h1>Scan the code</h1>
+    <p>Open Hop on your computer, click <b>Phone</b>, and scan the QR code with your camera.</p>
+  </div>
+
+  <script src="nacl-fast.min.js"></script>
+  <script src="phone.js"></script>
+</body>
+</html>
