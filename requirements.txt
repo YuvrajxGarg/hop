@@ -1,0 +1,12 @@
+# App window (WebKit on macOS, Edge WebView2 on Windows)
+pywebview>=5.0
+# Finding other Hop devices on the network (Bonjour / mDNS)
+zeroconf>=0.131
+# Encryption: XSalsa20-Poly1305 (libsodium)
+pynacl>=1.5
+# Pairing: SPAKE2 password-authenticated key exchange over the 6-digit code
+spake2>=0.9
+# QR code for phones
+segno>=1.6
+# Trusted certificates for update checks in the packaged app
+certifi

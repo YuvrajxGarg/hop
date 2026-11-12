@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hop</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="hop.css">
+</head>
+<body>
+  <div id="splash" class="pywebview-drag-region">
+    <div class="glow"></div>
+    <span class="mark splash-mark" style="--size:76px"><span class="l">h</span><span class="l">o</span><span class="l">p</span><i class="arc"></i></span>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <div class="titlebar pywebview-drag-region"></div>
+      <div class="side-scroll">
+        <div class="card composer">
+          <button id="dropzone" class="dropzone">
+            <div class="dz-icon" data-icon="upload"></div>
+            <b>Drop files to send</b>
+            <span>Any file, any size · folders keep their structure</span>
+          </button>
+          <div class="selection hidden" id="selection">
+            <div class="sel-icon" data-icon="layers"></div>
+            <div class="t"><b id="sel-title"></b><span id="sel-sub"></span></div>
+            <button class="btn-icon" id="sel-clear" title="Clear"><i data-icon="x"></i></button>
+          </div>
+          <div class="row2">
+            <button class="btn-quiet" id="add-files"><i data-icon="file"></i>Add files</button>
+            <button class="btn-quiet" id="add-folder"><i data-icon="folder"></i>Add folder</button>
+          </div>
+
+          <div class="label label-row"><span>Send to</span><span class="scan" id="scan"><i></i>Looking nearby</span></div>
+          <div class="devices" id="devices"></div>
+          <button class="add-addr" id="add-addr"><i data-icon="plus"></i>Add by address</button>
+
+          <button class="btn-primary" id="send-btn" disabled><i data-icon="send"></i><span>Send</span></button>
+        </div>
+      </div>
+
+      <footer id="footer">
+        <button class="frow" id="name-row" title="Rename this computer"><i data-icon="monitor"></i><span>Visible as</span><span class="path" id="my-name"></span></button>
+        <button class="frow" id="save-row" title="Open the folder"><i data-icon="folder"></i><span>Saving to</span><span class="path" id="save-path"></span></button>
+        <div class="frow brandrow">
+          <span class="mark" style="--size:13px;--knock:var(--sidebar)">hop<i class="arc"></i></span>
+          <span id="version"></span>
+          <button class="update-pill hidden" id="update-pill"></button>
+        </div>
+      </footer>
+    </aside>
+
+    <main id="content">
+      <div class="topbar pywebview-drag-region">
+        <div class="stats" id="stats"></div>
+        <div class="top-actions">
+          <button class="btn-quiet" id="open-phone"><i data-icon="phone"></i>Phone</button>
+          <button class="btn-icon filled" id="open-inbox" title="Show received files"><i data-icon="inbox"></i></button>
+          <button class="btn-icon filled" id="open-settings" title="Settings"><i data-icon="gear"></i></button>
+        </div>
+      </div>
+      <div id="list" class="list"></div>
+      <div id="empty" class="empty">
+        <div class="logomark lg"><span class="mark" style="--size:30px;--knock:#1d1d1f">hop<i class="arc"></i></span></div>
+        <h3>Drop files, pick a device</h3>
+        <p>Files go straight across your Wi-Fi, end-to-end encrypted.<br>Nothing touches the cloud.</p>
+        <div class="chips"><span class="chip">Mac</span><span class="chip">Windows</span><span class="chip">iPhone</span><span class="chip">Android</span><span class="chip">Any size</span><span class="chip">Resumes</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="welcome" class="hidden"></div>
+  <div id="drop" class="hidden"><div class="drop-frame"></div><div class="drop-inner"><span class="mark" style="--size:54px;--knock:#121213">hop<i class="arc"></i></span>Drop to send</div></div>
+  <div id="modal-root"></div>
+  <div id="toasts"></div>
+  <script src="app.js"></script>
+</body>
+</html>
