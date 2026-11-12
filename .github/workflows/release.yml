@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing tag to (re)build, e.g. v1.2.0
+        description: Tag to build, e.g. v1.2.0 (made from the chosen branch if it doesn't exist yet)
         required: true
 
 permissions:
@@ -31,6 +31,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Run by hand with a new tag: create it at this commit first, so the builds below can check it out.
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+          fi
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "Hop ${TAG#v}" --generate-notes --verify-tag --draft
 
