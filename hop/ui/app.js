@@ -626,7 +626,18 @@
     return new Proxy({}, { get: (_, name) => (...args) => fetch('/__api/' + name, { method: 'POST', body: JSON.stringify(args) }).then((r) => r.json()) });
   }
 
-  if (window.pywebview && window.pywebview.api) start(window.pywebview.api);
-  else if (location.protocol.startsWith('http')) start(devApi());
-  else window.addEventListener('pywebviewready', () => start(window.pywebview.api));
+  // Never leave the window stuck on the splash: if startup fails, show the app and say why.
+  let started = false;
+  const boot = (a) => {
+    if (started) return;
+    started = true;
+    start(a).catch((e) => {
+      $('#splash').classList.add('out'); $('#app').classList.add('in');
+      setTimeout(() => { const s = $('#splash'); if (s) s.remove(); }, 600);
+      toast("Hop couldn't start: " + ((e && e.message) || e), true);
+    });
+  };
+  if (window.HOP_DEV) boot(devApi());
+  else if (window.pywebview && window.pywebview.api) boot(window.pywebview.api);
+  else window.addEventListener('pywebviewready', () => boot(window.pywebview.api));
 })();

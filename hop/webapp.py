@@ -389,7 +389,12 @@ def dev_server(port):
             if not os.path.abspath(fp).startswith(UI_DIR) or not os.path.isfile(fp):
                 return self._send(404, b"{}")
             with open(fp, "rb") as f:
-                self._send(200, f.read(), mimetypes.guess_type(fp)[0] or "text/plain")
+                body = f.read()
+            if fp.endswith("index.html"):
+                # Tell the page it's in the browser bridge. (pywebview also serves the UI over
+                # http, so the page can't tell the two apart from the URL.)
+                body = body.replace(b"</head>", b"<script>window.HOP_DEV = true;</script></head>", 1)
+            self._send(200, body, mimetypes.guess_type(fp)[0] or "text/plain")
 
         def do_POST(self):
             name = self.path.split("/__api/")[-1]
