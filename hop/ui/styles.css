@@ -33,17 +33,14 @@ ul { list-style: none; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 svg.i { width: 14px; height: 14px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
-/* ---------- the mark: "hop" with a lime file hopping across it on a dashed path ---------- */
+/* ---------- the mark: "hop" and a lime send arrow (as "dwn" has its arrow, "tag" its strike, "pxl" its pixel) ---------- */
 .mark { position: relative; display: inline-block; font: 900 var(--size, 40px)/1 var(--font-display); letter-spacing: -.055em;
   color: var(--text); padding-right: .055em; white-space: nowrap; }
-.mark .path { position: absolute; left: .12em; right: .2em; top: -.42em; height: .55em; border: max(1px, .045em) dashed rgba(204,255,77,.55);
-  border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-.mark .file { position: absolute; left: 50%; top: -.62em; width: .32em; height: .4em; margin-left: -.16em; background: var(--accent); border-radius: .05em;
-  clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%); transform: rotate(12deg); }
-.mark .file::after { content: ""; position: absolute; right: 0; top: 0; width: 32%; height: 26%; background: #7d9c2f; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.mark .go { display: inline-block; width: .46em; height: .46em; margin-left: .07em; vertical-align: baseline;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M3 17L16 4M6 4h10v10' stroke='%23ccff4d' stroke-width='4.6' fill='none' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat; }
 .logomark { width: 40px; height: 40px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(#2b2b2d, #121213); border: 1px solid var(--stroke-strong); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-.logomark .mark { --knock: #1d1d1f; margin-top: .42em; font-size: calc(var(--size, 40px) * .8); }
+.logomark .mark { --knock: #1d1d1f; margin-top: -.12em; font-size: calc(var(--size, 40px) * .78); }
 .logomark.lg { width: 76px; height: 76px; border-radius: 21px; }
 
 /* ---------- surfaces & controls ---------- */
@@ -176,15 +173,20 @@ body.win .titlebar { display: none; }
 #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
 #splash .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(204,255,77,.07), transparent 360px);
   opacity: 0; animation: fadein 1.2s .5s ease-out forwards; }
-/* Hop's own entrance: the letters spring up from the baseline, then a lime file launches out of the
-   "h", flies up the dashed path (drawn behind it), tumbling as it goes, and the rest of the path
-   toward the "p" fades in ahead of it. The flight itself is in app.js (it follows the arc). */
+/* Hop's own entrance: the letters spring up from the baseline one after another, then the arrow is
+   sent: it shoots in from the lower left trailing a lime streak, overshoots up and to the right, and
+   settles. */
 .splash-mark .l { display: inline-block; opacity: 0; transform-origin: 50% 100%; animation: hop-spring .5s cubic-bezier(.34,1.56,.64,1) .05s forwards; }
 .splash-mark .l:nth-child(2) { animation-delay: .12s; }
 .splash-mark .l:nth-child(3) { animation-delay: .19s; }
-.splash-mark .path { opacity: 0; }
-.splash-mark .file { opacity: 0; }
+.splash-mark .go { position: relative; opacity: 0; transform: translate(-.55em, .55em) scale(.5);
+  animation: hop-send .6s cubic-bezier(.2,.9,.3,1.25) .62s forwards; }
+.splash-mark .go::before { content: ""; position: absolute; left: -.62em; bottom: .03em; width: .7em; height: .07em; border-radius: 1em;
+  background: linear-gradient(90deg, transparent, rgba(204,255,77,.7)); transform: rotate(-45deg); transform-origin: right center;
+  opacity: 0; animation: hop-streak .7s ease-out .62s forwards; }
 @keyframes hop-spring { 0% { opacity: 0; transform: scale(.2); } 30% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes hop-send { 0% { opacity: 0; transform: translate(-.55em, .55em) scale(.5); } 25% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes hop-streak { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(-45deg) scaleX(.2); } }
 .splash-status { color: var(--text3); font-weight: 600; font-size: 13px; letter-spacing: .02em; opacity: 0; animation: fadein .4s .9s forwards; }
 
 /* ---------- drop overlay ---------- */

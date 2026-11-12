@@ -9,11 +9,8 @@ body { padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area
 svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 header { display: flex; align-items: center; justify-content: space-between; padding: 14px 2px 22px; }
 .mark { position: relative; display: inline-block; font: 900 30px/1 var(--display); letter-spacing: -.055em; padding-right: .06em; }
-.mark .path { position: absolute; left: .12em; right: .2em; top: -.42em; height: .55em; border: max(1px, .045em) dashed rgba(204,255,77,.55);
-  border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-.mark .file { position: absolute; left: 50%; top: -.62em; width: .32em; height: .4em; margin-left: -.16em; background: var(--accent); border-radius: .05em;
-  clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%); transform: rotate(12deg); }
-.mark .file::after { content: ""; position: absolute; right: 0; top: 0; width: 32%; height: 26%; background: #7d9c2f; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.mark .go { display: inline-block; width: .46em; height: .46em; margin-left: .07em; vertical-align: baseline;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M3 17L16 4M6 4h10v10' stroke='%23ccff4d' stroke-width='4.6' fill='none' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat; }
 .conn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--stroke);
   color: var(--text2); font-size: 13px; font-weight: 500; max-width: 62%; }
 .conn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
