@@ -1,0 +1,9 @@
+.venv/
+.venv-build/
+build/
+dist/
+__pycache__/
+cleaned/
+.claude/
+.DS_Store
+.hop-partial/
