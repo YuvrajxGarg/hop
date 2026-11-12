@@ -529,6 +529,37 @@
   document.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; showDrop(false); } });
   document.addEventListener('drop', (e) => { e.preventDefault(); depth = 0; showDrop(false); });
 
+  // ---------- splash: the hop ----------
+  // A ball leaves the top of the "h", follows the arc (drawn behind it) and lands on the "p".
+  function playSplash() {
+    const mark = document.querySelector('.splash-mark');
+    const arc = mark && mark.querySelector('.arc');
+    const ball = mark && mark.querySelector('.ball');
+    if (!arc || !ball || !ball.animate) return;
+    const em = parseFloat(getComputedStyle(mark).fontSize);
+    const w = arc.offsetWidth, h = arc.offsetHeight, x0 = arc.offsetLeft, y0 = arc.offsetTop;
+    const stroke = 0.1 * em, rx = (w - stroke) / 2, ry = h - stroke / 2, cx = x0 + w / 2, cy = y0 + h;
+    const frames = [], N = 24;
+    for (let i = 0; i <= N; i++) {
+      const a = Math.PI - Math.PI * i / N;
+      frames.push({ transform: `translate(${cx + rx * Math.cos(a)}px, ${cy - ry * Math.sin(a)}px)`, opacity: 1 });
+    }
+    const end = { x: x0 + w + 0.05 * em, y: y0 + h + 0.01 * em };
+    const T = 0.62, at = 560;
+    frames.push({ transform: `translate(${end.x}px, ${end.y}px) scale(1.5, .6)`, opacity: 1 });
+    frames.push({ transform: `translate(${end.x}px, ${end.y}px) scale(.9, 1.1)`, opacity: 1 });
+    frames.push({ transform: `translate(${end.x}px, ${end.y}px)`, opacity: 1 });
+    const offs = frames.map((_, i) => i <= N ? (i / N) * 0.72 : [0.8, 0.9, 1][i - N - 1]);
+    frames.forEach((f, i) => { f.offset = offs[i]; });
+    ball.animate(frames, { duration: T * 1000 / 0.72, delay: at, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'forwards' });
+    arc.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 -30% 0 0)' }],
+      { duration: T * 1000, delay: at, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'forwards' });
+    const p = mark.querySelectorAll('.l')[2];
+    setTimeout(() => p.animate([{ transform: 'none' }, { transform: 'translateY(.06em) scaleY(.94)' }, { transform: 'none' }],
+      { duration: 260, easing: 'ease-out' }), at + T * 1000);
+  }
+  playSplash();
+
   // ---------- start ----------
   async function start(a) {
     api = a;
@@ -549,9 +580,9 @@
     const scan = $('#scan');
     if (!info.bonjour) { scan.classList.add('off'); scan.lastChild.textContent = 'Bonjour off · add by address'; }
     if (info.error) toast(info.error, true);
-    if (!settings.welcomed) setTimeout(showWelcome, 1150);
-    setTimeout(() => { $('#splash').classList.add('out'); $('#app').classList.add('in'); }, 1150);
-    setTimeout(() => $('#splash').remove(), 1800);
+    if (!settings.welcomed) setTimeout(showWelcome, 1550);
+    setTimeout(() => { $('#splash').classList.add('out'); $('#app').classList.add('in'); }, 1550);
+    setTimeout(() => $('#splash').remove(), 2200);
   }
 
   // Development bridge: the same UI in a normal browser, talking to `HOP_UI_DEV` over fetch.

@@ -176,12 +176,18 @@ body.win .titlebar { display: none; }
 #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
 #splash .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(204,255,77,.07), transparent 360px);
   opacity: 0; animation: fadein 1.2s .5s ease-out forwards; }
-.splash-mark .l { display: inline-block; opacity: 0; transform: translateY(24px); filter: blur(8px); animation: rise .6s cubic-bezier(.3,.9,.3,1) forwards; }
-.splash-mark .l:nth-child(1) { animation-delay: .08s; }
-.splash-mark .l:nth-child(2) { animation-delay: .17s; }
-.splash-mark .l:nth-child(3) { animation-delay: .26s; }
-.splash-mark .arc { clip-path: inset(0 100% 0 0); animation: arcin .55s .55s cubic-bezier(.6,0,.2,1) forwards; }
-@keyframes arcin { to { clip-path: inset(0 -20% 0 0); } }
+/* Hop's own entrance: the letters spring up from the baseline one after another, then a lime
+   ball hops from the "h" to the "p", tracing the arc behind it, and lands with a squash (app.js). */
+.splash-mark .l { display: inline-block; opacity: 0; transform: scale(.2, .2) translateY(.3em); transform-origin: 50% 85%;
+  animation: spring .55s cubic-bezier(.34,1.7,.5,1) forwards; }
+.splash-mark .l:nth-child(1) { animation-delay: .05s; }
+.splash-mark .l:nth-child(2) { animation-delay: .13s; }
+.splash-mark .l:nth-child(3) { animation-delay: .21s; }
+.splash-mark .arc { clip-path: inset(0 100% 0 0); }
+.splash-mark .arc::after { opacity: 0; }
+.splash-mark .ball { position: absolute; left: 0; top: 0; width: .22em; height: .22em; margin: -.11em 0 0 -.11em; border-radius: 50%;
+  background: var(--accent); opacity: 0; box-shadow: 0 0 .4em rgba(204,255,77,.55); }
+@keyframes spring { 60% { opacity: 1; } to { opacity: 1; transform: none; } }
 .splash-status { color: var(--text3); font-weight: 600; font-size: 13px; letter-spacing: .02em; opacity: 0; animation: fadein .4s .9s forwards; }
 
 /* ---------- drop overlay ---------- */
