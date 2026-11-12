@@ -37,7 +37,7 @@ svg.i { width: 14px; height: 14px; flex: none; stroke: currentColor; fill: none;
 .mark { position: relative; display: inline-block; font: 900 var(--size, 40px)/1 var(--font-display); letter-spacing: -.055em;
   color: var(--text); padding-right: .055em; white-space: nowrap; }
 .mark .go { display: inline-block; width: .46em; height: .46em; margin-left: .04em; vertical-align: baseline;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4.6 4.6 100 100'%3E%3Cpath transform='rotate(45 50 50)' fill='%23ccff4d' d='M33 46V83A17 17 0 0 0 67 83V46H100L50 0L0 46Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2.46 -2.46 100 100'%3E%3Cpath transform='rotate(45 50 50)' fill='%23ccff4d' d='M33 46V83A17 17 0 0 0 67 83V46H98L50 -14L2 46Z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .logomark { width: 40px; height: 40px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(#2b2b2d, #121213); border: 1px solid var(--stroke-strong); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
 .logomark .mark { --knock: #1d1d1f; margin-top: -.12em; font-size: calc(var(--size, 40px) * .78); }
