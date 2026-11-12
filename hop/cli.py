@@ -43,13 +43,13 @@ class Console(object):
         self.events.put((ev, payload))
 
 
-def _start(args, console, discover=True):
+def _start(args, console, discover=True, relay=False):
     s = Settings()
     if getattr(args, "name", None):
         s.set("device_name", args.name)
     if getattr(args, "output", None):
         s.set("save_dir", os.path.abspath(os.path.expanduser(args.output)))
-    node = Node(s, emit=console.emit, port=getattr(args, "port", None), discover=discover)
+    node = Node(s, emit=console.emit, port=getattr(args, "port", None), discover=discover, relay=relay and s.get("relay"))
     try:
         node.start()
     except HopError as e:
@@ -58,9 +58,31 @@ def _start(args, console, discover=True):
     return node
 
 
+def _by_code(node, ref):
+    """--to 7KQ2-9XMD-4TRA: someone's Hop code (added on first use)."""
+    from .remote import RelayError, norm_code
+    if not node.remote:
+        return None
+    try:
+        code = norm_code(ref)
+    except RelayError:
+        return None
+    c = node.remote.contacts().get(code)
+    if not c:
+        try:
+            c = node.remote.add(code)
+        except RelayError as e:
+            print("! " + str(e))
+            return False
+        print("Added %s (%s)." % (c["name"], ref))
+    return {"id": "code:" + code, "name": c["name"], "online": True, "paired": True}
+
+
 def _pick(node, ref):
     if ref:
-        p = None
+        p = _by_code(node, ref)
+        if p is not None:
+            return p or None
         for _ in range(40):  # give Bonjour a few seconds to find it
             try:
                 p = node.find_peer(ref)
@@ -96,12 +118,12 @@ def _pick(node, ref):
 
 def cmd_send(args):
     c = Console()
-    node = _start(args, c)
+    node = _start(args, c, relay=True)
     try:
         peer = _pick(node, args.to)
         if not peer:
             return 1
-        if not node.settings.peer(peer["id"]):
+        if not peer["id"].startswith("code:") and not node.settings.peer(peer["id"]):
             print("Pairing with %s. A 6-digit code is showing on it now." % peer["name"])
             node.pair_begin(peer["id"])
             code = input("Code: ")
@@ -180,8 +202,11 @@ def _ask(node, p, names):
 
 def cmd_receive(args):
     c = Console(yes=args.yes)
-    node = _start(args, c)
+    node = _start(args, c, relay=True)
     print("Hop is ready on %s as \"%s\". Files go to %s" % (node.ip, node.name, node.settings.save_dir))
+    if node.remote:
+        from .remote import pretty
+        print("Your Hop code is %s. Anyone can send to you with  hop send FILE --to %s" % (pretty(node.remote.code), pretty(node.remote.code)))
     if node.discovery and node.discovery.error:
         print("  (Bonjour unavailable: %s. Others can still use  hop send --to %s:%d)" % (node.discovery.error, node.ip, node.port))
     print("Press Ctrl+C to stop.")
@@ -239,6 +264,12 @@ def cmd_forget(args):
     return 1
 
 
+def cmd_code(args):
+    from .remote import Identity, pretty
+    print(pretty(Identity(Settings()).code))
+    return 0
+
+
 def cmd_selftest(args):
     """Checks the bundled crypto, pairing and QR libraries (used by the release smoke test)."""
     r = crypto.PairResponder("123456", "aa" * 8, "bb" * 8)
@@ -250,6 +281,13 @@ def cmd_selftest(args):
     assert segno.make("http://192.168.1.2:47470/#a.b").symbol_size()
     from . import discovery
     assert discovery.Zeroconf is not None
+    from .remote import Identity, box_pk, code_of
+    import nacl.public
+    import nacl.signing
+    sk = nacl.signing.SigningKey.generate()
+    assert len(code_of(bytes(sk.verify_key))) == 12
+    box = nacl.public.Box(sk.to_curve25519_private_key(), box_pk(crypto.b64e(bytes(sk.verify_key))))
+    assert box.decrypt(box.encrypt(b"hop")) == b"hop"
     print("selftest ok")
     return 0
 
@@ -261,7 +299,7 @@ def main(argv=None):
 
     s = sub.add_parser("send", help="send files or folders to another computer")
     s.add_argument("paths", nargs="+")
-    s.add_argument("--to", help="device name, id, or ip[:port]")
+    s.add_argument("--to", help="device name, id, ip[:port], or someone's Hop code")
     s.add_argument("--port", type=int, default=0)
 
     r = sub.add_parser("receive", help="wait for files")
@@ -282,10 +320,12 @@ def main(argv=None):
     f = sub.add_parser("forget", help="unpair a device")
     f.add_argument("device")
 
+    sub.add_parser("code", help="print this computer's Hop code")
+
     sub.add_parser("selftest", help=argparse.SUPPRESS)
 
     args = p.parse_args(argv)
-    fn = {"selftest": cmd_selftest, "send": cmd_send, "receive": cmd_receive, "phone": cmd_phone, "devices": cmd_devices, "forget": cmd_forget}.get(args.cmd)
+    fn = {"selftest": cmd_selftest, "send": cmd_send, "receive": cmd_receive, "phone": cmd_phone, "devices": cmd_devices, "forget": cmd_forget, "code": cmd_code}.get(args.cmd)
     if not fn:
         p.print_help()
         return 1

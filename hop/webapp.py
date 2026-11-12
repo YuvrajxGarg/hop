@@ -21,7 +21,7 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     UI_DIR = os.path.join(sys._MEIPASS, "hop", "ui")
 
 BG = "#0b0b0c"
-SETTABLE = ("device_name", "save_dir", "auto_accept", "open_after", "auto_check", "auto_install", "welcomed")
+SETTABLE = ("device_name", "save_dir", "auto_accept", "open_after", "auto_check", "auto_install", "welcomed", "relay")
 
 
 def qr_svg(text):
@@ -40,7 +40,7 @@ class Api(object):
         self.settings = Settings()
         self.selection = []  # paths waiting to be sent
         self.updater = Updater(self.settings, lambda st: self._emit("update", st))
-        self.node = Node(self.settings, emit=self._on_node)
+        self.node = Node(self.settings, emit=self._on_node, relay=True)
         self.node_error = None
         try:
             self.node.start()
@@ -75,6 +75,7 @@ class Api(object):
                 "update": self.updater.state(), "home": os.path.expanduser("~"), "name": self.node.name,
                 "ip": self.node.ip, "port": self.node.port, "error": self.node_error,
                 "bonjour": bool(self.node.discovery and self.node.discovery.available),
+                "relay": self.node.remote.status() if self.node.remote else None,
                 "peers": self.node.peers(), "transfers": self.node.transfers(), "selection": self._sel_public()}
 
     def set_setting(self, key, value):
@@ -83,6 +84,12 @@ class Api(object):
                 self.node.rename(value)
             else:
                 self.settings.set(key, value)
+            if key == "device_name" and self.node.remote:
+                self.node.remote.registered = False  # re-register so others see the new name
+                self.node.remote.wake.set()
+            if key == "relay" and self.node.remote:
+                self.node.remote.wake.set()
+                self._emit("relay", self.node.remote.status())
             if key == "auto_install" and value and self.updater.phase == "available":
                 threading.Thread(target=self.updater.stage_newest, daemon=True).start()
         return self.settings.public()
@@ -97,8 +104,34 @@ class Api(object):
             return {"ok": False, "error": str(e)}
 
     def forget(self, peer_id):
-        self.node.forget(peer_id)
+        if str(peer_id).startswith("code:"):
+            self.settings.forget_contact(peer_id.split(":", 1)[1])
+        else:
+            self.node.forget(peer_id)
         return self.node.peers()
+
+    def add_code(self, code):
+        from .remote import RelayError
+        if not self.node.remote:
+            return {"ok": False, "error": "Sending by Hop code is turned off"}
+        try:
+            p = self.node.remote.add(code)
+        except RelayError as e:
+            return {"ok": False, "error": str(e)}
+        self._emit("peers", self.node.peers())
+        return {"ok": True, "peer": {"id": "code:" + p["code"], "name": p["name"]}}
+
+    def copy(self, text):
+        """Clipboard fallback for webviews that block navigator.clipboard."""
+        text = str(text or "")
+        try:
+            if sys.platform == "darwin":
+                subprocess.run(["pbcopy"], input=text.encode("utf-8"), check=False)
+            elif os.name == "nt":
+                subprocess.run(["clip"], input=text.encode("utf-16-le"), check=False)
+        except Exception:
+            pass
+        return True
 
     # selection
     def add_paths(self, paths):
