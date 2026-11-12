@@ -376,6 +376,7 @@ class Updater(object):
             ps = "\n".join([
                 "$ErrorActionPreference = 'Continue'",
                 "Set-Location -LiteralPath $env:TEMP",
+                "[System.IO.Directory]::SetCurrentDirectory($env:TEMP)",  # Set-Location alone keeps the process's real working folder
                 "$log = %s; $target = %s; $staged = %s; $exe = %s; $old = $target + '.old'"
                 % (q(os.path.join(app_data_dir(), "update.log")), q(target), q(staged), q(exe)),
                 "function Log($m) { try { Add-Content -LiteralPath $log -Value ((Get-Date -Format s) + '  swap  ' + $m) -Encoding UTF8 } catch {} }",
