@@ -330,7 +330,9 @@ def main():
         try:
             window.destroy()
         finally:
-            threading.Timer(3.0, lambda: os._exit(0)).start()
+            t = threading.Timer(3.0, lambda: os._exit(0))
+            t.daemon = True
+            t.start()
 
     def on_closing():
         api._updater.install_on_quit()
@@ -345,6 +347,11 @@ def main():
         window.events.shown += lambda: _style_windows(window)
     window.events.loaded += on_loaded
     webview.start(debug=bool(os.environ.get("HOP_DEBUG")))
+    if os.name == "nt":
+        # The window is closed. Leave without Python's normal shutdown: tearing down pythonnet and
+        # WinForms there can crash, and a crash report keeps the process alive, which stalls the
+        # update swap waiting for it to exit (the app then never reopened after an update).
+        os._exit(0)
 
 
 # ---- development: the same UI in a regular browser ----------------------------

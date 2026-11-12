@@ -366,23 +366,43 @@ class Updater(object):
             subprocess.Popen(["/bin/sh", script], start_new_session=True,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
-            script = os.path.join(tempfile.gettempdir(), "hop-swap-%d.ps1" % pid)
+            script = os.path.join(tempfile.gettempdir(), "%s-swap-%d.ps1" % (APP_NAME.lower(), pid))
             exe = os.path.join(target, APP_NAME + ".exe")
             q = lambda s: "'" + s.replace("'", "''") + "'"
-            with open(script, "w", encoding="utf-8") as f:
-                f.write(
-                    "while (Get-Process -Id %d -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 200 }\n"
-                    "Start-Sleep -Milliseconds 400\n"
-                    "if (-not (Test-Path %s)) { exit 1 }\n"
-                    "Remove-Item -Recurse -Force (%s + '.old') -ErrorAction SilentlyContinue\n"
-                    "Move-Item %s (%s + '.old')\n"
-                    "Move-Item %s %s\n"
-                    "Remove-Item -Recurse -Force (%s + '.old') -ErrorAction SilentlyContinue\n"
-                    "%s\n"
-                    "Remove-Item $MyInvocation.MyCommand.Path\n"
-                    % (pid, q(staged), q(target), q(target), q(target), q(staged), q(target), q(target),
-                       ("Start-Process " + q(exe)) if relaunch else ""))
+            # Run from %TEMP%: a process whose working folder is inside the app folder locks it, and
+            # then the old folder can't be moved aside. Every step retries for a while (WebView2
+            # helpers and antivirus scans can hold files for a moment), logs to update.log, and the
+            # app is always reopened, falling back to the old version if the swap didn't happen.
+            ps = "\n".join([
+                "$ErrorActionPreference = 'Continue'",
+                "Set-Location -LiteralPath $env:TEMP",
+                "$log = %s; $target = %s; $staged = %s; $exe = %s; $old = $target + '.old'"
+                % (q(os.path.join(app_data_dir(), "update.log")), q(target), q(staged), q(exe)),
+                "function Log($m) { try { Add-Content -LiteralPath $log -Value ((Get-Date -Format s) + '  swap  ' + $m) -Encoding UTF8 } catch {} }",
+                "$t = (Get-Date).AddSeconds(20)",
+                "while (Get-Process -Id %d -ErrorAction SilentlyContinue) {" % pid,
+                "  if ((Get-Date) -gt $t) { Log 'the app is still running, ending it'; Stop-Process -Id %d -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 800; break }" % pid,
+                "  Start-Sleep -Milliseconds 200",
+                "}",
+                "if (Test-Path -LiteralPath $staged) {",
+                "  Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue",
+                "  $moved = $false; $t = (Get-Date).AddSeconds(30)",
+                "  while (-not $moved) {",
+                "    try { Move-Item -LiteralPath $target -Destination $old -ErrorAction Stop; $moved = $true }",
+                "    catch { if ((Get-Date) -gt $t) { Log ('could not move the old version aside: ' + $_); break }; Start-Sleep -Milliseconds 500 }",
+                "  }",
+                "  if ($moved) {",
+                "    try { Move-Item -LiteralPath $staged -Destination $target -ErrorAction Stop; Log 'installed the new version'; Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue }",
+                "    catch { Log ('could not move the new version in: ' + $_); Move-Item -LiteralPath $old -Destination $target -ErrorAction SilentlyContinue }",
+                "  }",
+                "} else { Log 'no staged update found' }",
+                "Start-Process -FilePath $exe -WorkingDirectory $target" if relaunch else "",
+                "Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue",
+                "",
+            ])
+            with open(script, "w", encoding="utf-8-sig") as f:  # BOM: Windows PowerShell reads BOM-less files as ANSI
+                f.write(ps)
             flags = 0x08000000 | 0x00000008  # CREATE_NO_WINDOW | DETACHED_PROCESS
             subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
-                              "-File", script], creationflags=flags, close_fds=True)
+                              "-File", script], creationflags=flags, close_fds=True, cwd=tempfile.gettempdir())
         self.settings.set("staged_version", None)
