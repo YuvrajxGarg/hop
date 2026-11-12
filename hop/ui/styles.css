@@ -33,17 +33,14 @@ ul { list-style: none; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 svg.i { width: 14px; height: 14px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
-/* ---------- the mark: "hop" with a lime arc hopping over it ---------- */
+/* ---------- the mark: "hop" and a lime send arrow (as "dwn" has its arrow, "tag" its strike, "pxl" its pixel) ---------- */
 .mark { position: relative; display: inline-block; font: 900 var(--size, 40px)/1 var(--font-display); letter-spacing: -.055em;
   color: var(--text); padding-right: .055em; white-space: nowrap; }
-.mark .arc { position: absolute; left: .06em; right: .16em; top: -.34em; height: .5em; border: .1em solid var(--accent); border-bottom: 0;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-.mark .arc::after { content: ""; position: absolute; right: -.16em; bottom: -.12em; width: .22em; height: .22em; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 0 .05em var(--knock, var(--bg)); }
-
+.mark .go { display: inline-block; width: .46em; height: .46em; margin-left: .04em; vertical-align: baseline;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2.46 -2.46 100 100'%3E%3Cpath transform='rotate(45 50 50)' fill='%23ccff4d' d='M33 46V83A17 17 0 0 0 67 83V46H98L50 -14L2 46Z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .logomark { width: 40px; height: 40px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(#2b2b2d, #121213); border: 1px solid var(--stroke-strong); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-.logomark .mark { --knock: #1d1d1f; margin-top: -.12em; }
+.logomark .mark { --knock: #1d1d1f; margin-top: -.12em; font-size: calc(var(--size, 40px) * .78); }
 .logomark.lg { width: 76px; height: 76px; border-radius: 21px; }
 
 /* ---------- surfaces & controls ---------- */
@@ -176,18 +173,20 @@ body.win .titlebar { display: none; }
 #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
 #splash .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(204,255,77,.07), transparent 360px);
   opacity: 0; animation: fadein 1.2s .5s ease-out forwards; }
-/* Hop's own entrance: the letters spring up from the baseline one after another, then a lime
-   ball hops from the "h" to the "p", tracing the arc behind it, and lands with a squash (app.js). */
-.splash-mark .l { display: inline-block; opacity: 0; transform: scale(.2, .2) translateY(.3em); transform-origin: 50% 85%;
-  animation: spring .55s cubic-bezier(.34,1.7,.5,1) forwards; }
-.splash-mark .l:nth-child(1) { animation-delay: .05s; }
-.splash-mark .l:nth-child(2) { animation-delay: .13s; }
-.splash-mark .l:nth-child(3) { animation-delay: .21s; }
-.splash-mark .arc { clip-path: inset(0 100% 0 0); }
-.splash-mark .arc::after { opacity: 0; }
-.splash-mark .ball { position: absolute; left: 0; top: 0; width: .22em; height: .22em; margin: -.11em 0 0 -.11em; border-radius: 50%;
-  background: var(--accent); opacity: 0; box-shadow: 0 0 .4em rgba(204,255,77,.55); }
-@keyframes spring { 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+/* Hop's own entrance: the letters spring up from the baseline one after another, then the arrow is
+   sent: it shoots in from the lower left trailing a lime streak, overshoots up and to the right, and
+   settles. */
+.splash-mark .l { display: inline-block; opacity: 0; transform-origin: 50% 100%; animation: hop-spring .5s cubic-bezier(.34,1.56,.64,1) .05s forwards; }
+.splash-mark .l:nth-child(2) { animation-delay: .12s; }
+.splash-mark .l:nth-child(3) { animation-delay: .19s; }
+.splash-mark .go { position: relative; opacity: 0; transform: translate(-.55em, .55em) scale(.5);
+  animation: hop-send .6s cubic-bezier(.2,.9,.3,1.25) .62s forwards; }
+.splash-mark .go::before { content: ""; position: absolute; left: -.62em; bottom: .03em; width: .7em; height: .07em; border-radius: 1em;
+  background: linear-gradient(90deg, transparent, rgba(204,255,77,.7)); transform: rotate(-45deg); transform-origin: right center;
+  opacity: 0; animation: hop-streak .7s ease-out .62s forwards; }
+@keyframes hop-spring { 0% { opacity: 0; transform: scale(.2); } 30% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes hop-send { 0% { opacity: 0; transform: translate(-.55em, .55em) scale(.5); } 25% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes hop-streak { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(-45deg) scaleX(.2); } }
 .splash-status { color: var(--text3); font-weight: 600; font-size: 13px; letter-spacing: .02em; opacity: 0; animation: fadein .4s .9s forwards; }
 
 /* ---------- drop overlay ---------- */
@@ -321,7 +320,7 @@ body.win .titlebar { display: none; }
 
 /* Splash letters animate with blur; WebKit clips filtered boxes, so give the
    letter boxes room for the "g" descender without moving the baseline. */
-.splash-mark .l { padding: .08em 0 .3em; margin: -.08em 0 -.3em; }
+.splash-mark .l { padding: .1em .2em .3em; margin: -.1em -.2em -.3em; }
 .thumb img { animation: none; }
 #footer .frow > span:not(.path) { white-space: nowrap; flex: none; }
 .btn-primary { transition: transform .1s; }

@@ -196,7 +196,8 @@ class Updater(object):
             self._set("checking")
         try:
             rel = self.fetch_latest()
-            if not is_newer(rel["version"], __version__):
+            if not is_newer(rel["version"], __version__) or not (rel["zip"] and rel["sha"]):
+                # A release without this platform's build isn't ready for us yet; never offer it.
                 self._set("uptodate")
             elif self.settings.get("staged_version") == rel["version"] and os.path.exists(self.staged_path):
                 self._set("ready")
@@ -221,7 +222,7 @@ class Updater(object):
         work = None
         try:
             rel = self.fetch_latest()
-            if not is_newer(rel["version"], __version__):
+            if not is_newer(rel["version"], __version__) or not (rel["zip"] and rel["sha"]):
                 self._set("uptodate")
                 return False
             if self.settings.get("staged_version") == rel["version"] and os.path.exists(self.staged_path):
