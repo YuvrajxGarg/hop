@@ -105,6 +105,32 @@ def installed_location():
     return None
 
 
+def sync_installed_version():
+    """Installed with the Windows setup: keep the version shown in Settings > Apps current.
+
+    The setup registers the app under HKCU ...\\Uninstall\\PXLVZN.<App>_is1. Updates swap
+    the app folder without running the setup again, so the app updates the entry itself.
+    """
+    if os.name != "nt" or not getattr(sys, "frozen", False):
+        return
+    try:
+        import winreg
+
+        path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\PXLVZN.%s_is1" % APP_NAME
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path, 0, winreg.KEY_READ | winreg.KEY_SET_VALUE) as k:
+            where = winreg.QueryValueEx(k, "InstallLocation")[0]
+            here = installed_location()
+            if not here or os.path.normcase(os.path.abspath(where.rstrip("\\"))) != os.path.normcase(here):
+                return  # a different copy (say, an unzipped one) is running
+            if winreg.QueryValueEx(k, "DisplayVersion")[0] != __version__:
+                winreg.SetValueEx(k, "DisplayVersion", 0, winreg.REG_SZ, __version__)
+                log("set the installed version to %s" % __version__)
+    except OSError:
+        pass  # not installed with the setup
+    except Exception as e:
+        log("could not update the installed version: %s" % e)
+
+
 class Updater(object):
     def __init__(self, settings, emit):
         self.settings = settings
@@ -117,6 +143,7 @@ class Updater(object):
         self.staging = False
         self.on_quit_for_install = None  # set by the UI: closes the window
         self.stage_dir = os.path.join(app_data_dir(), "Update")
+        sync_installed_version()
         staged = settings.get("staged_version")
         if staged and not is_newer(staged, __version__):
             self._discard_staged()

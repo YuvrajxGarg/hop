@@ -1,6 +1,10 @@
 # Builds Hop for macOS and Windows when a version tag (v1.2.3) is
 # pushed, and attaches the apps to that GitHub release. Installed copies check
 # the latest release for updates:
+# What people download (installer/ builds these):
+#   macOS   -> Hop.dmg          (drag to Applications)
+#   Windows -> Hop-Setup.exe    (setup wizard)
+# What installed copies update from (keep these: every existing install uses them):
 #   macOS   -> Hop-mac.zip      + .sha256
 #   Windows -> Hop-windows.zip  + .sha256
 name: Release
@@ -70,6 +74,9 @@ jobs:
           ditto -c -k --keepParent Hop.app Hop-mac.zip
           shasum -a 256 Hop-mac.zip > Hop-mac.zip.sha256
           cat Hop-mac.zip.sha256
+      - name: Disk image (macOS)
+        if: runner.os == 'macOS'
+        run: installer/build_mac.sh Hop && installer/test_mac.sh Hop
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -79,10 +86,19 @@ jobs:
           $h = (Get-FileHash Hop-windows.zip -Algorithm SHA256).Hash.ToLower()
           "$h  Hop-windows.zip" | Out-File -Encoding ascii -NoNewline Hop-windows.zip.sha256
           Get-Content Hop-windows.zip.sha256
+      - name: Setup wizard (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          installer/build_windows.ps1 -App Hop -Version $env:TAG -Url https://hop.pxlvzn.in
+          installer/test_windows.ps1 -App Hop -Smoke "python tests/smoke_app.py"
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" dist/Hop-*.zip dist/Hop-*.zip.sha256 --clobber
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then files="dist/Hop-mac.zip* dist/Hop.dmg*"
+          else files="dist/Hop-windows.zip* dist/Hop-Setup.exe*"; fi
+          gh release upload "$TAG" $files --clobber
 
   publish:
     needs: build
@@ -95,7 +111,7 @@ jobs:
         run: |
           assets=$(gh release view "$TAG" --json assets -q '.assets[].name')
           echo "$assets"
-          for a in Hop-mac.zip Hop-mac.zip.sha256 Hop-windows.zip Hop-windows.zip.sha256; do
+          for a in Hop-mac.zip Hop-mac.zip.sha256 Hop-windows.zip Hop-windows.zip.sha256 Hop.dmg Hop-Setup.exe; do
             echo "$assets" | grep -qx "$a" || { echo "missing $a, leaving the release as a draft"; exit 1; }
           done
           gh release edit "$TAG" --draft=false --latest

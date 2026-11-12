@@ -28,8 +28,8 @@ AirDrop stops at the edge of Apple's world, and everything else (cloud drives, c
 
 | Platform | Download | First launch |
 |---|---|---|
-| **macOS** 11+ · Apple silicon | [**Hop-mac.zip**](https://github.com/YuvrajxGarg/hop/releases/latest/download/Hop-mac.zip) | Unzip and move **Hop** to Applications. The app isn't notarized, so the first time: right-click → **Open**. On macOS 15 and later, go to **System Settings → Privacy & Security → Open Anyway** instead. Allow **Local Network** when asked, so Hop can find your other devices. |
-| **Windows** 10 / 11 · 64-bit | [**Hop-windows.zip**](https://github.com/YuvrajxGarg/hop/releases/latest/download/Hop-windows.zip) | Unzip the **Hop** folder somewhere you own (Documents, Desktop) and run **Hop.exe**. If SmartScreen appears, click **More info → Run anyway**. When Windows Firewall asks, allow **Private networks** so other devices can send to you. |
+| **macOS** 11+ · Apple silicon | [**Hop.dmg**](https://github.com/YuvrajxGarg/hop/releases/latest/download/Hop.dmg) | Open it and drag **Hop** to Applications. The app isn't notarized, so the first time: right-click → **Open**. On macOS 15 and later, go to **System Settings → Privacy & Security → Open Anyway** instead. Allow **Local Network** when asked, so Hop can find your other devices. |
+| **Windows** 10 / 11 · 64-bit | [**Hop-Setup.exe**](https://github.com/YuvrajxGarg/hop/releases/latest/download/Hop-Setup.exe) | Run the setup. It installs Hop for your account (no admin needed) and adds it to the Start menu. If SmartScreen appears, click **More info → Run anyway**. When Windows Firewall asks, allow **Private networks** so other devices can send to you. |
 | **Phones** | Nothing to install | Click **Phone** in Hop and scan the QR code. |
 
 Hop checks this repository for new releases and updates itself.
@@ -133,7 +133,7 @@ Hop.spec           PyInstaller recipe for both platforms
    git tag v1.0.1 && git push origin v1.0.1
    ```
 
-3. The **Release** workflow builds, tests and smoke-tests both apps, then attaches `Hop-mac.zip` and `Hop-windows.zip` (each with a `.sha256`) to a draft release, and publishes it only once both are there. Installed copies pick it up on their next update check.
+3. The **Release** workflow builds, tests and smoke-tests both apps, then attaches the installers (`Hop.dmg`, `Hop-Setup.exe`) and the update zips (`Hop-mac.zip`, `Hop-windows.zip`, each with a `.sha256`) to a draft release, and publishes it only once both are there. Installed copies pick it up on their next update check.
 
 ## License
 
