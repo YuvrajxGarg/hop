@@ -35,90 +35,90 @@ def qr_svg(text):
 
 class Api(object):
     def __init__(self, emit_js=None):
-        self.window = None
-        self.emit_js = emit_js
-        self.settings = Settings()
-        self.selection = []  # paths waiting to be sent
-        self.updater = Updater(self.settings, lambda st: self._emit("update", st))
-        self.node = Node(self.settings, emit=self._on_node, relay=True)
-        self.node_error = None
+        self._window = None
+        self._emit_js = emit_js
+        self._settings = Settings()
+        self._selection = []  # paths waiting to be sent
+        self._updater = Updater(self._settings, lambda st: self._emit("update", st))
+        self._node = Node(self._settings, emit=self._on_node, relay=True)
+        self._node_error = None
         try:
-            self.node.start()
+            self._node.start()
         except HopError as e:
-            self.node_error = str(e)
+            self._node_error = str(e)
 
     # ---- helpers ----
     def _emit(self, event, payload):
-        if self.emit_js:
-            self.emit_js(event, payload)
+        if self._emit_js:
+            self._emit_js(event, payload)
             return
-        if self.window:
+        if self._window:
             try:
-                self.window.evaluate_js("window.App && App.on(%s, %s)" % (json.dumps(event), json.dumps(payload)))
+                self._window.evaluate_js("window.App && App.on(%s, %s)" % (json.dumps(event), json.dumps(payload)))
             except Exception:
                 pass
 
     def _on_node(self, event, payload):
         self._emit(event, payload)
-        if event == "received" and self.settings.get("open_after") and payload.get("first"):
+        if event == "received" and self._settings.get("open_after") and payload.get("first"):
             self.reveal(payload["first"])
 
     def _sel_public(self):
-        files = collect(self.selection)
+        files = collect(self._selection)
         total = sum(os.path.getsize(p) for p, _ in files)
-        names = [os.path.basename(p.rstrip(os.sep)) for p in self.selection]
-        return {"count": len(files), "total": total, "size": human(total), "names": names[:3], "items": len(self.selection)}
+        names = [os.path.basename(p.rstrip(os.sep)) for p in self._selection]
+        return {"count": len(files), "total": total, "size": human(total), "names": names[:3], "items": len(self._selection)}
 
     # ---- called from JS ----
     def info(self):
-        return {"version": __version__, "platform": sys.platform, "settings": self.settings.public(),
-                "update": self.updater.state(), "home": os.path.expanduser("~"), "name": self.node.name,
-                "ip": self.node.ip, "port": self.node.port, "error": self.node_error,
-                "bonjour": bool(self.node.discovery and self.node.discovery.available),
-                "relay": self.node.remote.status() if self.node.remote else None,
-                "peers": self.node.peers(), "transfers": self.node.transfers(), "selection": self._sel_public()}
+        return {"version": __version__, "platform": sys.platform, "settings": self._settings.public(),
+                "update": self._updater.state(), "home": os.path.expanduser("~"), "name": self._node.name,
+                "ip": self._node.ip, "port": self._node.port, "error": self._node_error,
+                "bonjour": bool(self._node.discovery and self._node.discovery.available),
+                "relay": self._node.remote.status() if self._node.remote else None,
+                "peers": self._node.peers(), "transfers": self._node.transfers(), "selection": self._sel_public()}
 
     def set_setting(self, key, value):
         if key in SETTABLE:
             if key == "device_name":
-                self.node.rename(value)
+                self._node.rename(value)
             else:
-                self.settings.set(key, value)
-            if key == "device_name" and self.node.remote:
-                self.node.remote.registered = False  # re-register so others see the new name
-                self.node.remote.wake.set()
-            if key == "relay" and self.node.remote:
-                self.node.remote.wake.set()
-                self._emit("relay", self.node.remote.status())
-            if key == "auto_install" and value and self.updater.phase == "available":
-                threading.Thread(target=self.updater.stage_newest, daemon=True).start()
-        return self.settings.public()
+                self._settings.set(key, value)
+            if key == "device_name" and self._node.remote:
+                self._node.remote.registered = False  # re-register so others see the new name
+                self._node.remote.wake.set()
+            if key == "relay" and self._node.remote:
+                self._node.remote.wake.set()
+                self._emit("relay", self._node.remote.status())
+            if key == "auto_install" and value and self._updater.phase == "available":
+                threading.Thread(target=self._updater.stage_newest, daemon=True).start()
+        return self._settings.public()
 
     def peers(self):
-        return self.node.peers()
+        return self._node.peers()
 
     def add_address(self, addr):
         try:
-            return {"ok": True, "peer": self.node.add_by_address(addr)}
+            return {"ok": True, "peer": self._node.add_by_address(addr)}
         except HopError as e:
             return {"ok": False, "error": str(e)}
 
     def forget(self, peer_id):
         if str(peer_id).startswith("code:"):
-            self.settings.forget_contact(peer_id.split(":", 1)[1])
+            self._settings.forget_contact(peer_id.split(":", 1)[1])
         else:
-            self.node.forget(peer_id)
-        return self.node.peers()
+            self._node.forget(peer_id)
+        return self._node.peers()
 
     def add_code(self, code):
         from .remote import RelayError
-        if not self.node.remote:
+        if not self._node.remote:
             return {"ok": False, "error": "Sending by Hop code is turned off"}
         try:
-            p = self.node.remote.add(code)
+            p = self._node.remote.add(code)
         except RelayError as e:
             return {"ok": False, "error": str(e)}
-        self._emit("peers", self.node.peers())
+        self._emit("peers", self._node.peers())
         return {"ok": True, "peer": {"id": "code:" + p["code"], "name": p["name"]}}
 
     def copy(self, text):
@@ -136,44 +136,44 @@ class Api(object):
     # selection
     def add_paths(self, paths):
         for p in paths:
-            if os.path.exists(p) and p not in self.selection:
-                self.selection.append(p)
+            if os.path.exists(p) and p not in self._selection:
+                self._selection.append(p)
         sel = self._sel_public()
         self._emit("selection", sel)
         return sel
 
     def clear_selection(self):
-        self.selection = []
+        self._selection = []
         sel = self._sel_public()
         self._emit("selection", sel)
         return sel
 
     def pick_files(self):
         import webview
-        res = self.window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=True)
+        res = self._window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=True)
         if res:
             self.add_paths(list(res))
 
     def pick_folder(self):
         import webview
-        res = self.window.create_file_dialog(webview.FileDialog.FOLDER)
+        res = self._window.create_file_dialog(webview.FileDialog.FOLDER)
         if res:
             self.add_paths([res[0] if isinstance(res, (list, tuple)) else res])
 
     def choose_save_dir(self):
         import webview
-        res = self.window.create_file_dialog(webview.FileDialog.FOLDER)
+        res = self._window.create_file_dialog(webview.FileDialog.FOLDER)
         if res:
             d = res[0] if isinstance(res, (list, tuple)) else res
-            self.settings.set("save_dir", d)
-        return self.settings.public()
+            self._settings.set("save_dir", d)
+        return self._settings.public()
 
     # sending
     def send(self, peer_id):
-        if not self.selection:
+        if not self._selection:
             return {"ok": False, "error": "Add some files first"}
         try:
-            self.node.send(peer_id, list(self.selection))
+            self._node.send(peer_id, list(self._selection))
         except HopError as e:
             if str(e) == "unpaired":
                 return {"ok": False, "pair": True}
@@ -183,50 +183,50 @@ class Api(object):
 
     def pair_begin(self, peer_id):
         try:
-            self.node.pair_begin(peer_id)
+            self._node.pair_begin(peer_id)
             return {"ok": True}
         except HopError as e:
             return {"ok": False, "error": str(e)}
 
     def pair_finish(self, peer_id, code):
         try:
-            self.node.pair_finish(peer_id, code)
+            self._node.pair_finish(peer_id, code)
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
     def pair_cancel(self, peer_id):
-        self.node.pair_cancel(peer_id)
+        self._node.pair_cancel(peer_id)
 
     # receiving
     def decide(self, tid, accept):
-        self.node.decide(tid, accept)
+        self._node.decide(tid, accept)
 
     def cancel(self, tid):
-        self.node.cancel(tid)
+        self._node.cancel(tid)
 
     def retry(self, tid):
-        self.node.retry(tid)
+        self._node.retry(tid)
 
     def remove(self, tid):
-        self.node.remove(tid)
+        self._node.remove(tid)
 
     # phone
     def phone(self, fresh=False):
-        url = self.node.new_web_link() if fresh else self.node.web_url()
-        return {"url": url, "qr": qr_svg(url), "host": "%s:%d" % (self.node.ip, self.node.port)}
+        url = self._node.new_web_link() if fresh else self._node.web_url()
+        return {"url": url, "qr": qr_svg(url), "host": "%s:%d" % (self._node.ip, self._node.port)}
 
     # updates
     def check_updates(self):
-        return self.updater.check(manual=True)
+        return self._updater.check(manual=True)
 
     def download_update(self):
-        threading.Thread(target=self.updater.stage_newest, daemon=True).start()
+        threading.Thread(target=self._updater.stage_newest, daemon=True).start()
 
     def install_update(self):
         def go():
-            if self.updater.install() == "open_page":
-                self.open_url(self.updater.state()["page"])
+            if self._updater.install() == "open_page":
+                self.open_url(self._updater.state()["page"])
         threading.Thread(target=go, daemon=True).start()
 
     def open_url(self, url):
@@ -252,7 +252,7 @@ class Api(object):
             pass
 
     def open_save_dir(self):
-        d = self.settings.save_dir
+        d = self._settings.save_dir
         os.makedirs(d, exist_ok=True)
         self.reveal(d)
 
@@ -312,7 +312,7 @@ def main():
         "Hop", url=os.path.join(UI_DIR, "index.html"), js_api=api,
         width=1120, height=720, min_size=(880, 580), background_color=BG, easy_drag=False,
     )
-    api.window = window
+    api._window = window
 
     def on_drop(e):
         files = (e.get("dataTransfer") or {}).get("files") or []
@@ -330,21 +330,28 @@ def main():
         try:
             window.destroy()
         finally:
-            threading.Timer(3.0, lambda: os._exit(0)).start()
+            t = threading.Timer(3.0, lambda: os._exit(0))
+            t.daemon = True
+            t.start()
 
     def on_closing():
-        api.updater.install_on_quit()
-        api.node.stop()
+        api._updater.install_on_quit()
+        api._node.stop()
 
-    api.updater.on_quit_for_install = quit_for_install
+    api._updater.on_quit_for_install = quit_for_install
     window.events.closing += on_closing
-    window.events.loaded += lambda: api.updater.start()
+    window.events.loaded += lambda: api._updater.start()
     if sys.platform == "darwin":
         window.events.before_show += lambda: _style_mac(window)
     elif os.name == "nt":
         window.events.shown += lambda: _style_windows(window)
     window.events.loaded += on_loaded
     webview.start(debug=bool(os.environ.get("HOP_DEBUG")))
+    if os.name == "nt":
+        # The window is closed. Leave without Python's normal shutdown: tearing down pythonnet and
+        # WinForms there can crash, and a crash report keeps the process alive, which stalls the
+        # update swap waiting for it to exit (the app then never reopened after an update).
+        os._exit(0)
 
 
 # ---- development: the same UI in a regular browser ----------------------------
@@ -362,7 +369,7 @@ def dev_server(port):
             cond.notify_all()
 
     api = Api(emit_js=push)
-    api.window = None
+    api._window = None
 
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -407,10 +414,10 @@ def dev_server(port):
 
     srv = ThreadingHTTPServer(("127.0.0.1", port), H)
     srv.daemon_threads = True
-    print("Hop UI (dev) on http://127.0.0.1:%d  ·  node on port %d" % (port, api.node.port), flush=True)
+    print("Hop UI (dev) on http://127.0.0.1:%d  ·  node on port %d" % (port, api._node.port), flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        api.node.stop()
+        api._node.stop()
